@@ -21,8 +21,8 @@ defmodule Macfly.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:msgpax, "~> 2.4.0"},
-      {:json, "~> 1.4.1", only: [:test]},
+      {:msgpax, "~> 2.3"},
+      {:json, "~> 1.4", only: [:test]},
     ]
   end
 end
