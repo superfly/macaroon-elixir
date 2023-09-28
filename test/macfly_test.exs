@@ -12,4 +12,10 @@ defmodule MacflyTest do
       end
     end
   end
+
+  test "new" do
+    {:ok, hdr} = Macfly.new("foo", "bar", "baz")
+    {:ok, [macaroon]} = Macfly.LowLevel.parse_tokens(hdr)
+    :ok = Macfly.LowLevel.verify_tail("foo", macaroon)
+  end
 end

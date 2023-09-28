@@ -11,5 +11,10 @@ defmodule Macfly do
     end
   end
 
-  def new(key, kid, location, caveats \\ []), do: Macfly.LowLevel.new(key, new_nonce(kid), location, caveats_to_wire(caveats))
+  def new(key, kid, location, caveats \\ []) do
+    with {:ok, macaroon} <- Macfly.LowLevel.new(key, new_nonce(kid), location, caveats_to_wire(caveats)),
+         {:ok, toks} <- encode_tokens([macaroon]) do
+      {:ok, "FlyV1 #{toks}"}
+    end
+  end
 end
