@@ -22,6 +22,7 @@ defmodule Macfly.LowLevelTest do
     assert {:ok, %{"macaroons" => macaroons}} = JSON.decode(data)
     for {_name, hdr} <- macaroons do
       assert {:ok, decoded} = Macfly.LowLevel.parse_tokens(hdr)
+      [nonce | _] = decoded
       assert {:ok, reencoded} = Macfly.LowLevel.encode_tokens(decoded)
       assert "FlyV1 #{reencoded}" == hdr
     end

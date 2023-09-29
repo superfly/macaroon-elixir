@@ -21,7 +21,7 @@ defmodule Macfly.LowLevel do
     end
   end
 
-  def new_nonce(kid, rnd \\ :crypto.strong_rand_bytes(16), is_proof \\ false), do: [kid, rnd, is_proof]
+  def new_nonce(kid, rnd \\ :crypto.strong_rand_bytes(16), is_proof \\ false), do: [Msgpax.Bin.new(kid), Msgpax.Bin.new(rnd), is_proof]
 
   def attenuate_tokens(target_location, [[_, location | _] = token | rest], wirecavs) when is_nil(target_location) or target_location == location do
     with {:ok, attenuated} <- attenuate_token(token, wirecavs),
