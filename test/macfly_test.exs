@@ -10,11 +10,10 @@ defmodule MacflyTest do
     %TestCaveats.MapCaveat{},
     %TestCaveats.IntResourceSetCaveat{},
     %TestCaveats.StringResourceSetCaveat{},
-    %TestCaveats.PrefixResourceSetCaveat{},
-    %TestCaveats.StructCaveat{}
+    %TestCaveats.PrefixResourceSetCaveat{}
   ]
 
-  test "attenuate_tokens" do
+  test "attenuate" do
     {:ok, data} = File.read("test/vectors.json")
 
     {:ok, %{"location" => location, "attenuation" => baseHeaderToAttenuations}} =
@@ -30,9 +29,9 @@ defmodule MacflyTest do
           |> Msgpax.unpack!(binary: true)
           |> Macfly.CaveatSet.from_wire(o)
 
-        {:ok, actual} = Macfly.attenuate_tokens(baseHeader, cavs, o)
+        {:ok, macaroons} = Macfly.decode(baseHeader)
 
-        assert expected == actual
+        assert expected == Macfly.attenuate(macaroons, cavs, o) |> Macfly.encode()
       end
     end
   end
@@ -85,16 +84,31 @@ defmodule MacflyTest do
                    hd(hd(macaroons).caveats)
 
         "Struct" ->
-          assert %TestCaveats.StructCaveat{
-                   stringField: "foo",
-                   intField: -123,
-                   uintField: 123,
-                   sliceField: <<1, 2, 3>>,
-                   mapField: %{"foo" => "bar"},
-                   intResourceSetField: %{123 => 31},
-                   stringResourceSetField: %{"foo" => 31},
-                   prefixResourceSetField: %{"foo" => 31}
+          assert %Macfly.Caveat.UnrecognizedCaveat{
+                   type: 281_474_976_710_664,
+                   body: [
+                     "foo",
+                     -123,
+                     123,
+                     Msgpax.Bin.new(<<1, 2, 3>>),
+                     %{"foo" => "bar"},
+                     %{123 => 31},
+                     %{"foo" => 31},
+                     %{"foo" => 31}
+                   ]
                  } == hd(hd(macaroons).caveats)
+
+        "ConfineUser" ->
+          assert %Macfly.Caveat.ConfineUser{id: 123} == hd(hd(macaroons).caveats)
+
+        "ConfineOrganization" ->
+          assert %Macfly.Caveat.ConfineOrganization{id: 123} == hd(hd(macaroons).caveats)
+
+        "ConfineGoogleHD" ->
+          assert %Macfly.Caveat.ConfineGoogleHD{hd: "123"} == hd(hd(macaroons).caveats)
+
+        "ConfineGitHubOrg" ->
+          assert %Macfly.Caveat.ConfineGitHubOrg{id: 123} == hd(hd(macaroons).caveats)
       end
 
       assert header == Macfly.encode(macaroons)
@@ -104,5 +118,19 @@ defmodule MacflyTest do
   test "decode bad input" do
     {:error, _} = Macfly.decode("FlyV1 fm2_x")
     {:error, _} = Macfly.decode("FlyV1 FlyV1 fm2_o2Zvbw==")
+  end
+
+  test "tickets" do
+    {:ok, data} = File.read("test/vectors.json")
+
+    {:ok, %{"location" => location, "with_tps" => header}} =
+      JSON.decode(data)
+
+    o = %Macfly.Options{location: location}
+    {:ok, macaroons} = Macfly.decode(header)
+
+    tickets = Macfly.tickets(macaroons, o)
+    ["undischarged"] = Map.values(tickets)
+    [<<_::binary>>] = Map.keys(tickets)
   end
 end

@@ -37,6 +37,42 @@ defmodule Macfly.Caveat.ValidityWindow do
   end
 end
 
+defmodule Macfly.Caveat.ConfineUser do
+  alias __MODULE__
+
+  defstruct [:id]
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 8
+
+    def body(%ConfineUser{id: id}), do: [id]
+
+    def from_body(_, [id], _) when is_integer(id) do
+      {:ok, %ConfineUser{id: id}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad ConfineUser format"}
+  end
+end
+
+defmodule Macfly.Caveat.ConfineOrganization do
+  alias __MODULE__
+
+  defstruct [:id]
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 9
+
+    def body(%ConfineOrganization{id: id}), do: [id]
+
+    def from_body(_, [id], _) when is_integer(id) do
+      {:ok, %ConfineOrganization{id: id}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad ConfineOrganization format"}
+  end
+end
+
 defmodule Macfly.Caveat.ThirdParty do
   alias __MODULE__
 
@@ -53,8 +89,8 @@ defmodule Macfly.Caveat.ThirdParty do
       [location, verifier_key, ticket]
     end
 
-    def from_body(_, [location, verifier_key, ticket], _)
-        when is_binary(location) and is_binary(verifier_key) and is_binary(ticket) do
+    def from_body(_, [location, %Msgpax.Bin{data: verifier_key}, %Msgpax.Bin{data: ticket}], _)
+        when is_binary(location) do
       {:ok, %ThirdParty{location: location, verifier_key: verifier_key, ticket: ticket}}
     end
 
@@ -101,6 +137,42 @@ defmodule Macfly.Caveat.IfPresent do
         error -> error
       end
     end
+  end
+end
+
+defmodule Macfly.Caveat.ConfineGoogleHD do
+  alias __MODULE__
+
+  defstruct [:hd]
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 19
+
+    def body(%ConfineGoogleHD{hd: hd}), do: hd
+
+    def from_body(_, hd, _) when is_binary(hd) do
+      {:ok, %ConfineGoogleHD{hd: hd}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad ConfineGoogleHD format"}
+  end
+end
+
+defmodule Macfly.Caveat.ConfineGitHubOrg do
+  alias __MODULE__
+
+  defstruct [:id]
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 20
+
+    def body(%ConfineGitHubOrg{id: id}), do: id
+
+    def from_body(_, id, _) when is_integer(id) do
+      {:ok, %ConfineGitHubOrg{id: id}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad ConfineGitHubOrg format"}
   end
 end
 

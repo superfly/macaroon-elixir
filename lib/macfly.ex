@@ -1,27 +1,7 @@
 defmodule Macfly do
   alias Macfly.Macaroon
   alias Macfly.Options
-
-  def attenuate_tokens(<<header::binary>>, caveats, o \\ %Options{}) do
-    maybe_attenuate = fn m ->
-      if(m.location == o.location) do
-        Macaroon.attenuate(m, caveats)
-      else
-        m
-      end
-    end
-
-    case decode(header, o) do
-      {:ok, macaroons} ->
-        macaroons
-        |> Enum.map(maybe_attenuate)
-        |> encode()
-        |> then(&{:ok, &1})
-
-      error ->
-        error
-    end
-  end
+  alias Macfly.Caveat
 
   @spec decode(String.t(), Options.t()) :: {:ok, list(Macaroon.t())} | {:error, any()}
   def decode(header, o \\ %Options{})
@@ -51,5 +31,46 @@ defmodule Macfly do
     |> Enum.map(&Macaroon.encode/1)
     |> Enum.join(",")
     |> then(&("FlyV1 " <> &1))
+  end
+
+  @spec attenuate(list(Macaroon.t()), list(Caveat), Options.t()) :: list(Macaroon.t())
+  def attenuate(macaroons, caveats, options \\ %Options{})
+  def attenuate([], _, _), do: []
+
+  def attenuate(
+        [%Macaroon{location: location} = m | rest],
+        caveats,
+        %Options{
+          location: target_location
+        } = o
+      )
+      when location == target_location do
+    [Macaroon.attenuate(m, caveats) | attenuate(rest, caveats, o)]
+  end
+
+  def attenuate([m | rest], caveats, %Options{} = o) do
+    [m | attenuate(rest, caveats, o)]
+  end
+
+  @spec tickets(list(Macaroon.t()), Options.t()) :: %{binary() => String.t()}
+  def tickets(macaroons, %Options{location: location} \\ %Options{}) do
+    alias Macfly.Caveat.ThirdParty
+    alias Macfly.Nonce
+
+    for m <- macaroons, reduce: %{} do
+      acc ->
+        case m do
+          %Macaroon{location: ^location} ->
+            for %ThirdParty{ticket: ticket} = c <- m.caveats, reduce: acc do
+              acc -> Map.put_new(acc, ticket, c)
+            end
+
+          %Macaroon{nonce: %Nonce{kid: ticket}} ->
+            Map.put(acc, ticket, m)
+        end
+    end
+    |> then(
+      &for {ticket, %ThirdParty{location: location}} <- &1, into: %{}, do: {ticket, location}
+    )
   end
 end
