@@ -7,7 +7,9 @@ defmodule Macfly.MixProject do
       version: "0.1.0",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      consolidate_protocols: Mix.env() != :test,
+      elixirc_paths: if(Mix.env() == :test, do: [:lib, :test], else: [:lib])
     ]
   end
 
@@ -22,7 +24,7 @@ defmodule Macfly.MixProject do
   defp deps do
     [
       {:msgpax, "~> 2.3"},
-      {:json, "~> 1.4", only: [:test]},
+      {:json, "~> 1.4", only: [:test]}
     ]
   end
 end

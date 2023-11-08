@@ -5,8 +5,8 @@ defprotocol Macfly.Caveat do
   @spec body(t) :: any()
   def body(v)
 
-  @spec from_body(t, any()) :: t
-  def from_body(v, body)
+  @spec from_body(t, any(), Macfly.CaveatTypes.t()) :: {:ok, t} | {:error, String.t()}
+  def from_body(v, body, t)
 end
 
 defmodule Macfly.Caveat.ValidityWindow do
@@ -28,9 +28,12 @@ defmodule Macfly.Caveat.ValidityWindow do
       [not_before, not_after]
     end
 
-    def from_body(_, [not_before, not_after]) do
-      %ValidityWindow{not_before: not_before, not_after: not_after}
+    def from_body(_, [not_before, not_after], _)
+        when is_integer(not_before) and is_integer(not_after) do
+      {:ok, %ValidityWindow{not_before: not_before, not_after: not_after}}
     end
+
+    def from_body(_, _, _), do: {:error, "bad ValidityWindow format"}
   end
 end
 
@@ -50,9 +53,12 @@ defmodule Macfly.Caveat.ThirdParty do
       [location, verifier_key, ticket]
     end
 
-    def from_body(_, [location, verifier_key, ticket]) do
-      %ThirdParty{location: location, verifier_key: verifier_key, ticket: ticket}
+    def from_body(_, [location, verifier_key, ticket], _)
+        when is_binary(location) and is_binary(verifier_key) and is_binary(ticket) do
+      {:ok, %ThirdParty{location: location, verifier_key: verifier_key, ticket: ticket}}
     end
+
+    def from_body(_, _, _), do: {:error, "bad ThirdParty format"}
   end
 end
 
@@ -68,14 +74,17 @@ defmodule Macfly.Caveat.BindToParentToken do
       binding_id
     end
 
-    def from_body(_, binding_id) do
-      %BindToParentToken{binding_id: binding_id}
+    def from_body(_, binding_id, _) when is_binary(binding_id) do
+      {:ok, %BindToParentToken{binding_id: binding_id}}
     end
+
+    def from_body(_, _, _), do: {:error, "bad BindToParentToken format"}
   end
 end
 
 defmodule Macfly.Caveat.IfPresent do
   alias __MODULE__
+  alias Macfly.CaveatSet
 
   defstruct [:ifs, :else]
 
@@ -83,46 +92,28 @@ defmodule Macfly.Caveat.IfPresent do
     def type(_), do: 13
 
     def body(%IfPresent{ifs: ifs, else: els}) do
-      [Macfly.LowLevel.caveats_to_wire(ifs), els]
+      [CaveatSet.to_wire(ifs), els]
     end
 
-    def from_body(_, [wire_ifs, els]) do
-      %IfPresent{ifs: wire_ifs, else: els}
+    def from_body(_, [ifs, els], t) do
+      case CaveatSet.from_wire(ifs, t) do
+        {:ok, ifs} -> {:ok, %IfPresent{ifs: ifs, else: els}}
+      end
     end
   end
 end
 
-defmodule Macfly.Caveat.Registry do
+defmodule Macfly.Caveat.UnrecognizedCaveat do
   alias __MODULE__
 
-  defstruct entries: %{}
+  defstruct [:type, :body]
 
-  @spec default() :: %Registry{}
-  def default() do
-    %Registry{}
-    |> register(%Macfly.Caveat.ValidityWindow{})
-    |> register(%Macfly.Caveat.ThirdParty{})
-    |> register(%Macfly.Caveat.BindToParentToken{})
-    |> register(%Macfly.Caveat.IfPresent{})
-  end
+  defimpl Macfly.Caveat do
+    def type(%UnrecognizedCaveat{type: type}), do: type
+    def body(%UnrecognizedCaveat{body: body}), do: body
 
-  @spec register(%Registry{}, Macfly.Caveat.t()) :: %Registry{}
-  def register(r, caveat) do
-    %Registry{r | entries: Map.put(r.entries, Macfly.Caveat.type(caveat), caveat)}
-  end
-
-  @spec from_wire(list()) :: :error | {:ok, [Macfly.Caveat.t()]}
-  def from_wire(wirecavs), do: from_wire(default(), wirecavs)
-
-  @spec from_wire(%Registry{}, list()) :: :error | {:ok, [Macfly.Caveat.t()]}
-  def from_wire(r, [type, body | rest]) do
-    with %{^type => struct} <- r.entries,
-         {:ok, restCaveats} <- from_wire(r, rest) do
-      {:ok, [Macfly.Caveat.from_body(struct, body) | restCaveats]}
-    else
-      _ -> :error
+    def from_body(%UnrecognizedCaveat{type: type}, body, _) do
+      %UnrecognizedCaveat{type: type, body: body}
     end
   end
-
-  def from_wire(_, []), do: {:ok, []}
 end
