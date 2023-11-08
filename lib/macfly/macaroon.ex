@@ -1,6 +1,6 @@
 defmodule Macfly.Macaroon do
   alias __MODULE__
-  alias Macfly.CaveatTypes
+  alias Macfly.Options
   alias Macfly.CaveatSet
   alias Macfly.Nonce
 
@@ -14,43 +14,41 @@ defmodule Macfly.Macaroon do
 
   def new(<<key::binary>>, %Nonce{} = nonce, <<location::binary>>, caveats)
       when is_list(caveats) do
-    tail =
-      nonce
-      |> Nonce.to_wire()
-      |> Msgpax.pack!()
-      |> sign(key)
-
-    %Macaroon{
-      nonce: nonce,
-      location: location,
-      caveats: [],
-      tail: tail
-    }
+    nonce
+    |> Nonce.to_wire()
+    |> Msgpax.pack!()
+    |> sign(key)
+    |> then(
+      &%Macaroon{
+        nonce: nonce,
+        location: location,
+        caveats: [],
+        tail: &1
+      }
+    )
   end
 
   def attenuate(%Macaroon{caveats: caveats, tail: tail} = m, [caveat | rest])
       when is_list(caveats) do
-    tail =
-      [caveat]
-      |> CaveatSet.to_wire()
-      |> Msgpax.pack!()
-      |> sign(tail)
-
-    %Macaroon{m | caveats: caveats ++ [caveat], tail: tail}
+    [caveat]
+    |> CaveatSet.to_wire()
+    |> Msgpax.pack!()
+    |> sign(tail)
+    |> then(&%Macaroon{m | caveats: caveats ++ [caveat], tail: &1})
     |> attenuate(rest)
   end
 
   def attenuate(%Macaroon{} = m, []), do: m
 
-  def decode("fm1r_" <> token, %CaveatTypes{} = t), do: _decode(token, t)
-  def decode("fm1a_" <> token, %CaveatTypes{} = t), do: _decode(token, t)
-  def decode("fm2_" <> token, %CaveatTypes{} = t), do: _decode(token, t)
+  def decode("fm1r_" <> token, %Options{} = o), do: _decode(token, o)
+  def decode("fm1a_" <> token, %Options{} = o), do: _decode(token, o)
+  def decode("fm2_" <> token, %Options{} = o), do: _decode(token, o)
   def decode(_), do: {:error, "bad prefix"}
 
-  defp _decode(token, %CaveatTypes{} = t) do
+  defp _decode(token, %Options{} = o) do
     with {:ok, decoded} <- Base.decode64(token),
          {:ok, macaroon} <- Msgpax.unpack(decoded, binary: true) do
-      from_wire(macaroon, t)
+      from_wire(macaroon, o)
     else
       :error -> {:error, "bad base64 encoding"}
       error -> error
@@ -58,15 +56,15 @@ defmodule Macfly.Macaroon do
   end
 
   def encode(%Macaroon{} = m) do
-    "fm2_" <>
-      (to_wire(m)
-       |> Msgpax.pack!(iodata: false)
-       |> Base.encode64())
+    to_wire(m)
+    |> Msgpax.pack!(iodata: false)
+    |> Base.encode64()
+    |> then(&("fm2_" <> &1))
   end
 
-  def from_wire([nonce, location, caveats, %Msgpax.Bin{data: tail}], %CaveatTypes{} = t) do
+  def from_wire([nonce, location, caveats, %Msgpax.Bin{data: tail}], %Options{} = o) do
     with {:ok, nonce} <- Nonce.from_wire(nonce),
-         {:ok, caveats} <- CaveatSet.from_wire(caveats, t) do
+         {:ok, caveats} <- CaveatSet.from_wire(caveats, o) do
       {:ok,
        %Macaroon{
          nonce: nonce,
@@ -79,7 +77,7 @@ defmodule Macfly.Macaroon do
     end
   end
 
-  def from_wire(_, %CaveatTypes{}), do: {:error, "bad macaroon format"}
+  def from_wire(_, %Options{}), do: {:error, "bad macaroon format"}
 
   def to_wire(%Macaroon{nonce: nonce, location: location, caveats: caveats, tail: tail}) do
     [

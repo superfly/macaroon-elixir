@@ -5,7 +5,7 @@ defprotocol Macfly.Caveat do
   @spec body(t) :: any()
   def body(v)
 
-  @spec from_body(t, any(), Macfly.CaveatTypes.t()) :: {:ok, t} | {:error, String.t()}
+  @spec from_body(t, any(), Macfly.Options.t()) :: {:ok, t} | {:error, String.t()}
   def from_body(v, body, t)
 end
 
@@ -98,6 +98,7 @@ defmodule Macfly.Caveat.IfPresent do
     def from_body(_, [ifs, els], t) do
       case CaveatSet.from_wire(ifs, t) do
         {:ok, ifs} -> {:ok, %IfPresent{ifs: ifs, else: els}}
+        error -> error
       end
     end
   end
@@ -113,7 +114,7 @@ defmodule Macfly.Caveat.UnrecognizedCaveat do
     def body(%UnrecognizedCaveat{body: body}), do: body
 
     def from_body(%UnrecognizedCaveat{type: type}, body, _) do
-      %UnrecognizedCaveat{type: type, body: body}
+      {:ok, %UnrecognizedCaveat{type: type, body: body}}
     end
   end
 end

@@ -15,12 +15,12 @@ defmodule MacflyTest do
   ]
 
   test "attenuate_tokens" do
-    t = Macfly.CaveatTypes.with_caveats(@test_caveats)
-
     {:ok, data} = File.read("test/vectors.json")
 
     {:ok, %{"location" => location, "attenuation" => baseHeaderToAttenuations}} =
       JSON.decode(data)
+
+    o = Macfly.Options.with_caveats(%Macfly.Options{location: location}, @test_caveats)
 
     for {baseHeader, attenuations} <- baseHeaderToAttenuations do
       for {b64Cav, expected} <- attenuations do
@@ -28,9 +28,9 @@ defmodule MacflyTest do
           b64Cav
           |> Base.decode64!()
           |> Msgpax.unpack!(binary: true)
-          |> Macfly.CaveatSet.from_wire(t)
+          |> Macfly.CaveatSet.from_wire(o)
 
-        {:ok, actual} = Macfly.attenuate_tokens(location, baseHeader, cavs, t)
+        {:ok, actual} = Macfly.attenuate_tokens(baseHeader, cavs, o)
 
         assert expected == actual
       end
@@ -48,13 +48,13 @@ defmodule MacflyTest do
   end
 
   test "encode/decode with custom caveats" do
-    t = Macfly.CaveatTypes.with_caveats(@test_caveats)
+    o = Macfly.Options.with_caveats(@test_caveats)
 
     {:ok, data} = File.read("test/vectors.json")
     {:ok, %{"macaroons" => headers}} = JSON.decode(data)
 
     for {name, header} <- headers do
-      {:ok, macaroons} = Macfly.decode(header, t)
+      {:ok, macaroons} = Macfly.decode(header, o)
 
       case name do
         "String" ->
