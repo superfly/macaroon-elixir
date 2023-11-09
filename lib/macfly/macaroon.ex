@@ -4,7 +4,15 @@ defmodule Macfly.Macaroon do
   alias Macfly.CaveatSet
   alias Macfly.Nonce
 
+  @enforce_keys [:nonce, :location, :caveats, :tail]
   defstruct [:nonce, :location, :caveats, :tail]
+
+  @type t() :: %Macaroon{
+          nonce: Nonce.t(),
+          location: String.t(),
+          caveats: list(Macfly.Caveat),
+          tail: binary()
+        }
 
   def new(key, kid_or_nonce, location, caveats \\ [])
 

@@ -120,7 +120,7 @@ defmodule MacflyTest do
     {:error, _} = Macfly.decode("FlyV1 FlyV1 fm2_o2Zvbw==")
   end
 
-  test "tickets" do
+  test "discharges" do
     {:ok, data} = File.read("test/vectors.json")
 
     {:ok, %{"location" => location, "with_tps" => header}} =
@@ -129,8 +129,12 @@ defmodule MacflyTest do
     o = %Macfly.Options{location: location}
     {:ok, macaroons} = Macfly.decode(header)
 
-    tickets = Macfly.tickets(macaroons, o)
-    ["undischarged"] = Map.values(tickets)
-    [<<_::binary>>] = Map.keys(tickets)
+    [
+      %Macfly.Discharge{
+        location: "undischarged",
+        ticket: <<_::binary>>,
+        state: :init
+      }
+    ] = Macfly.discharges(macaroons, o)
   end
 end

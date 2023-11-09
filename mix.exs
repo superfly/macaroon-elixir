@@ -24,7 +24,8 @@ defmodule Macfly.MixProject do
   defp deps do
     [
       {:msgpax, "~> 2.3"},
-      {:json, "~> 1.4", only: [:test]}
+      {:httpoison, "~> 2.2"},
+      {:json, "~> 1.4"}
     ]
   end
 end

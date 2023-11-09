@@ -6,13 +6,15 @@ defprotocol Macfly.Caveat do
   def body(v)
 
   @spec from_body(t, any(), Macfly.Options.t()) :: {:ok, t} | {:error, String.t()}
-  def from_body(v, body, t)
+  def from_body(v, body, o)
 end
 
 defmodule Macfly.Caveat.ValidityWindow do
   alias __MODULE__
 
+  @enforce_keys [:not_before, :not_after]
   defstruct [:not_before, :not_after]
+  @type t() :: %ValidityWindow{not_before: integer(), not_after: integer()}
 
   def build(for: seconds) do
     %ValidityWindow{
@@ -40,7 +42,9 @@ end
 defmodule Macfly.Caveat.ConfineUser do
   alias __MODULE__
 
+  @enforce_keys [:id]
   defstruct [:id]
+  @type t() :: %ConfineUser{id: integer()}
 
   defimpl Macfly.Caveat do
     def type(_), do: 8
@@ -58,7 +62,9 @@ end
 defmodule Macfly.Caveat.ConfineOrganization do
   alias __MODULE__
 
+  @enforce_keys [:id]
   defstruct [:id]
+  @type t() :: %ConfineOrganization{id: integer()}
 
   defimpl Macfly.Caveat do
     def type(_), do: 9
@@ -76,7 +82,9 @@ end
 defmodule Macfly.Caveat.ThirdParty do
   alias __MODULE__
 
+  @enforce_keys [:location, :verifier_key, :ticket]
   defstruct [:location, :verifier_key, :ticket]
+  @type t() :: %ThirdParty{location: String.t(), verifier_key: binary(), ticket: binary()}
 
   defimpl Macfly.Caveat do
     def type(_), do: 11
@@ -101,7 +109,9 @@ end
 defmodule Macfly.Caveat.BindToParentToken do
   alias __MODULE__
 
+  @enforce_keys [:binding_id]
   defstruct [:binding_id]
+  @type t() :: %BindToParentToken{binding_id: binary()}
 
   defimpl Macfly.Caveat do
     def type(_), do: 12
@@ -122,7 +132,9 @@ defmodule Macfly.Caveat.IfPresent do
   alias __MODULE__
   alias Macfly.CaveatSet
 
+  @enforce_keys [:ifs, :else]
   defstruct [:ifs, :else]
+  @type t() :: %IfPresent{ifs: list(Macfly.Caveat), else: integer()}
 
   defimpl Macfly.Caveat do
     def type(_), do: 13
@@ -131,8 +143,8 @@ defmodule Macfly.Caveat.IfPresent do
       [CaveatSet.to_wire(ifs), els]
     end
 
-    def from_body(_, [ifs, els], t) do
-      case CaveatSet.from_wire(ifs, t) do
+    def from_body(_, [ifs, els], o) do
+      case CaveatSet.from_wire(ifs, o) do
         {:ok, ifs} -> {:ok, %IfPresent{ifs: ifs, else: els}}
         error -> error
       end
@@ -143,7 +155,9 @@ end
 defmodule Macfly.Caveat.ConfineGoogleHD do
   alias __MODULE__
 
+  @enforce_keys [:hd]
   defstruct [:hd]
+  @type t() :: %ConfineGoogleHD{hd: String.t()}
 
   defimpl Macfly.Caveat do
     def type(_), do: 19
@@ -161,7 +175,9 @@ end
 defmodule Macfly.Caveat.ConfineGitHubOrg do
   alias __MODULE__
 
+  @enforce_keys [:id]
   defstruct [:id]
+  @type t() :: %ConfineGitHubOrg{id: integer()}
 
   defimpl Macfly.Caveat do
     def type(_), do: 20
@@ -179,7 +195,9 @@ end
 defmodule Macfly.Caveat.UnrecognizedCaveat do
   alias __MODULE__
 
+  @enforce_keys [:type, :body]
   defstruct [:type, :body]
+  @type t() :: %UnrecognizedCaveat{type: integer(), body: any()}
 
   defimpl Macfly.Caveat do
     def type(%UnrecognizedCaveat{type: type}), do: type

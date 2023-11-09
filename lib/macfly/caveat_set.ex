@@ -4,7 +4,7 @@ defmodule Macfly.CaveatSet do
 
   def from_wire([type, body | rest], %Options{} = o) when is_integer(type) do
     with {:ok, rest} <- from_wire(rest, o),
-         {:ok, caveat} <- Options.build_caveat(o, type, body) do
+         {:ok, caveat} <- build_caveat(o, type, body) do
       {:ok, [caveat | rest]}
     else
       error -> error
@@ -19,4 +19,11 @@ defmodule Macfly.CaveatSet do
   end
 
   def to_wire([]), do: []
+
+  def build_caveat(%Options{} = o, type, body) do
+    case o.caveat_types do
+      %{^type => struct} -> Caveat.from_body(struct, body, o)
+      _ -> {:ok, %Caveat.UnrecognizedCaveat{type: type, body: body}}
+    end
+  end
 end

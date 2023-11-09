@@ -2,7 +2,11 @@ defmodule Macfly do
   alias Macfly.Macaroon
   alias Macfly.Options
   alias Macfly.Caveat
+  alias Macfly.Discharge
 
+  @doc """
+  Decode a macaroon header into a list of Macaroon structs.
+  """
   @spec decode(String.t(), Options.t()) :: {:ok, list(Macaroon.t())} | {:error, any()}
   def decode(header, o \\ %Options{})
   def decode("FlyV1 " <> toks, %Options{} = o), do: decode(toks, o)
@@ -25,6 +29,9 @@ defmodule Macfly do
 
   defp decode_tokens([], %Options{}), do: {:ok, []}
 
+  @doc """
+  Encode a list of Macaroon structs into a macaroon header.
+  """
   @spec encode(list(Macaroon.t())) :: String.t()
   def encode(macaroons) do
     macaroons
@@ -33,6 +40,9 @@ defmodule Macfly do
     |> then(&("FlyV1 " <> &1))
   end
 
+  @doc """
+  Attenuate the permission tokens within the list of macaroons.
+  """
   @spec attenuate(list(Macaroon.t()), list(Caveat), Options.t()) :: list(Macaroon.t())
   def attenuate(macaroons, caveats, options \\ %Options{})
   def attenuate([], _, _), do: []
@@ -52,8 +62,22 @@ defmodule Macfly do
     [m | attenuate(rest, caveats, o)]
   end
 
-  @spec tickets(list(Macaroon.t()), Options.t()) :: %{binary() => String.t()}
-  def tickets(macaroons, %Options{location: location} \\ %Options{}) do
+  @doc """
+  Get list of Discharge structs from list of macaroons for use in discharging
+  third party caveats.
+  """
+  @spec discharges(list(Macaroon.t()), Options.t()) :: list(Discharge.t())
+  def discharges(macaroons, %Options{} = o \\ %Options{}) do
+    for {ticket, location} <- tickets(macaroons, o), into: [] do
+      %Discharge{
+        location: location,
+        ticket: ticket,
+        state: :init
+      }
+    end
+  end
+
+  defp tickets(macaroons, %Options{location: location} \\ %Options{}) do
     alias Macfly.Caveat.ThirdParty
     alias Macfly.Nonce
 

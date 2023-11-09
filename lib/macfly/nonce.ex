@@ -1,7 +1,9 @@
 defmodule Macfly.Nonce do
   alias __MODULE__
 
+  @enforce_keys [:kid, :rnd, :is_proof]
   defstruct [:kid, :rnd, :is_proof]
+  @type t() :: %Nonce{kid: binary(), rnd: binary(), is_proof: boolean()}
 
   def new(kid, rnd \\ :crypto.strong_rand_bytes(16), is_proof \\ false) do
     %Nonce{kid: kid, rnd: rnd, is_proof: is_proof}
