@@ -51,7 +51,7 @@ defmodule Macfly.Macaroon do
   def decode("fm1r_" <> token, %Options{} = o), do: _decode(token, o)
   def decode("fm1a_" <> token, %Options{} = o), do: _decode(token, o)
   def decode("fm2_" <> token, %Options{} = o), do: _decode(token, o)
-  def decode(_), do: {:error, "bad prefix"}
+  def decode(_, _), do: {:error, "bad prefix"}
 
   defp _decode(token, %Options{} = o) do
     with {:ok, decoded} <- Base.decode64(token),
