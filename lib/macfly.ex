@@ -77,7 +77,7 @@ defmodule Macfly do
     end
   end
 
-  defp tickets(macaroons, %Options{location: location} \\ %Options{}) do
+  defp tickets(macaroons, %Options{location: location}) do
     alias Macfly.Caveat.ThirdParty
     alias Macfly.Nonce
 

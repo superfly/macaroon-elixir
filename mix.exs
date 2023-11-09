@@ -4,7 +4,7 @@ defmodule Macfly.MixProject do
   def project do
     [
       app: :macfly,
-      version: "0.2.1",
+      version: "0.2.2",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -25,7 +25,7 @@ defmodule Macfly.MixProject do
   defp deps do
     [
       {:msgpax, "~> 2.3"},
-      {:httpoison, "~> 2.2"},
+      {:httpoison, "~> 1.8"},
       {:json, "~> 1.4"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
