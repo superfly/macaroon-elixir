@@ -63,12 +63,7 @@ defmodule Macfly.Macaroon do
     end
   end
 
-  def encode(%Macaroon{} = m) do
-    to_wire(m)
-    |> Msgpax.pack!(iodata: false)
-    |> Base.encode64()
-    |> then(&("fm2_" <> &1))
-  end
+  def encode(%Macaroon{} = m), do: to_string(m)
 
   def from_wire([nonce, location, caveats, %Msgpax.Bin{data: tail}], %Options{} = o) do
     with {:ok, nonce} <- Nonce.from_wire(nonce),
@@ -97,4 +92,13 @@ defmodule Macfly.Macaroon do
   end
 
   defp sign(msg, key), do: :crypto.mac(:hmac, :sha256, key, msg)
+
+  defimpl String.Chars do
+    def to_string(%Macaroon{} = m) do
+      Macaroon.to_wire(m)
+      |> Msgpax.pack!(iodata: false)
+      |> Base.encode64()
+      |> then(&("fm2_" <> &1))
+    end
+  end
 end
