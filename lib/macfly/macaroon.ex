@@ -49,6 +49,18 @@ defmodule Macfly.Macaroon do
 
   def attenuate(%Macaroon{} = m, []), do: m
 
+  def add_third_party(m, location, tp_key, caveats \\ [])
+
+  def add_third_party(
+        %Macaroon{tail: tail} = m,
+        <<location::binary>>,
+        <<tp_key::binary>>,
+        caveats
+      ) do
+    tp = Macfly.Caveat.ThirdParty.build(location, tail, tp_key, caveats)
+    attenuate(m, [tp])
+  end
+
   def decode("fm1r_" <> token, %Options{} = o), do: _decode(token, o)
   def decode("fm1a_" <> token, %Options{} = o), do: _decode(token, o)
   def decode("fm2_" <> token, %Options{} = o), do: _decode(token, o)
