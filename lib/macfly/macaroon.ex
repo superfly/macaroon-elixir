@@ -34,6 +34,7 @@ defmodule Macfly.Macaroon do
         tail: &1
       }
     )
+    |> attenuate(caveats)
   end
 
   def attenuate(%Macaroon{caveats: caveats, tail: tail} = m, [caveat | rest])
