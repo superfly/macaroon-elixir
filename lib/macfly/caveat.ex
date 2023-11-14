@@ -94,7 +94,7 @@ defmodule Macfly.Caveat.ThirdParty do
           verifier_key: verifier_key,
           ticket: ticket
         }) do
-      [location, verifier_key, ticket]
+      [location, Msgpax.Bin.new(verifier_key), Msgpax.Bin.new(ticket)]
     end
 
     def from_body(_, [location, %Msgpax.Bin{data: verifier_key}, %Msgpax.Bin{data: ticket}], _)
