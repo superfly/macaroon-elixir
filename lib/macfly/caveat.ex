@@ -82,89 +82,67 @@ end
 defmodule Macfly.Caveat.ThirdParty do
   defmodule Ticket do
     alias __MODULE__
+    alias Macfly.Crypto
 
     @enforce_keys [:discharge_key, :caveats]
     defstruct [:discharge_key, :caveats]
     @type t() :: %Ticket{discharge_key: binary(), caveats: list(Macfly.Caveat.t())}
 
-    def pack(%Ticket{discharge_key: d, caveats: c}) do
-      Msgpax.pack!([Msgpax.Bin.new(d), Macfly.CaveatSet.to_wire(c)])
+    @spec seal(Ticket.t(), Crypto.key()) :: binary()
+    def seal(%Ticket{discharge_key: d, caveats: c}, tp_key) do
+      [Msgpax.Bin.new(d), Macfly.CaveatSet.to_wire(c)]
+      |> Msgpax.pack!(iodata: false)
+      |> Crypto.seal(tp_key)
     end
 
-    def decode(<<pt::binary>>, o) do
-      with {:ok, [%Msgpax.Bin{data: discharge_key}, wirecavs]} <- Msgpax.unpack(pt, binary: true),
-           {:ok, caveats} <- Macfly.CaveatSet.from_wire(wirecavs, o) do
+    @spec recover(Crypto.ciphertext(), Crypto.key(), Macfly.Options.t()) ::
+            {:ok, Ticket.t()} | {:error, any()}
+    def recover(ciphertext, key, options \\ Macfly.default_options()) do
+      with {:ok, pt} <- Crypto.unseal(ciphertext, key),
+           {:ok, [%Msgpax.Bin{data: discharge_key}, wirecavs]} <- Msgpax.unpack(pt, binary: true),
+           {:ok, caveats} <- Macfly.CaveatSet.from_wire(wirecavs, options) do
         {:ok, %Ticket{discharge_key: discharge_key, caveats: caveats}}
       else
         {:error, e} -> {:error, e}
         _ -> {:error, "bad Ticket format"}
       end
     end
+
+    @spec discharge_macaroon(Crypto.ciphertext(), Crypto.key(), String.t()) ::
+            {:ok, Macfly.Macaroon.t()} | {:error, any()}
+    def discharge_macaroon(ciphertext, tp_key, location) do
+      with {:ok, %Ticket{discharge_key: k}} <- Ticket.recover(ciphertext, tp_key) do
+        {:ok, Macfly.Macaroon.new(k, ciphertext, location)}
+      end
+    end
   end
 
   alias __MODULE__
+  alias Macfly.Crypto
 
   @enforce_keys [:location, :verifier_key, :ticket]
   defstruct [:location, :verifier_key, :ticket]
   @type t() :: %ThirdParty{location: String.t(), verifier_key: binary(), ticket: binary()}
 
-  @cipher :chacha20_poly1305
-  @nonce_len 12
-  @key_len 32
-  @tag_len 16
-
-  @type key() :: <<_::256>>
-
-  @spec build(String.t(), key(), key(), list(Macfly.Caveat.t())) :: ThirdParty.t()
-  def(build(location, tail, tp_key, caveats \\ []))
-
-  def build(
-        <<location::binary>>,
-        <<tail::binary-size(@key_len)>>,
-        <<tp_key::binary-size(@key_len)>>,
-        caveats
-      ) do
-    rn = :crypto.strong_rand_bytes(@key_len)
+  @spec build(String.t(), Crypto.key(), Crypto.key(), list(Macfly.Caveat.t())) :: ThirdParty.t()
+  def build(location, tail, tp_key, caveats \\ []) do
+    rn = Crypto.rand(32)
 
     ticket =
       %Ticket{discharge_key: rn, caveats: caveats}
-      |> Ticket.pack()
-      |> then(&seal(tp_key, &1))
+      |> Ticket.seal(tp_key)
 
     %ThirdParty{
       location: location,
-      verifier_key: seal(tail, rn),
+      verifier_key: Crypto.seal(rn, tail),
       ticket: ticket
     }
   end
 
-  @spec recover_ticket(ThirdParty.t(), key(), Macfly.Options.t()) ::
+  @spec recover_ticket(ThirdParty.t() | binary(), Crypto.key(), Macfly.Options.t()) ::
           {:ok, Ticket.t()} | {:error, any()}
-  def recover_ticket(third_party, tp_key, options)
-
-  def recover_ticket(%ThirdParty{ticket: ct}, tp_key, o) do
-    with {:ok, pt} <- unseal(tp_key, ct), do: Ticket.decode(pt, o)
-  end
-
-  defp seal(<<key::binary-size(@key_len)>>, pt) do
-    nonce = :crypto.strong_rand_bytes(@nonce_len)
-    {ct, tag} = :crypto.crypto_one_time_aead(@cipher, key, nonce, pt, <<>>, true)
-    <<nonce::binary, ct::binary, tag::binary>>
-  end
-
-  defp unseal(<<key::binary-size(@key_len)>>, <<nonce::binary-size(@nonce_len), ct_tag::binary>>)
-       when byte_size(ct_tag) >= @tag_len do
-    ct_len = byte_size(ct_tag) - @tag_len
-    <<ct::binary-size(ct_len), tag::binary>> = ct_tag
-
-    with <<pt::binary>> <- :crypto.crypto_one_time_aead(@cipher, key, nonce, ct, <<>>, tag, false) do
-      {:ok, pt}
-    else
-      :error -> {:error, "bad key or tag"}
-    end
-  end
-
-  defp unseal(_, _), do: {:error, "bad key or ct len"}
+  def recover_ticket(%ThirdParty{ticket: ct}, tp_key, options \\ Macfly.default_options()),
+    do: Ticket.recover(ct, tp_key, options)
 
   defimpl Macfly.Caveat do
     def type(_), do: 11
@@ -214,7 +192,7 @@ defmodule Macfly.Caveat.IfPresent do
 
   @enforce_keys [:ifs, :else]
   defstruct [:ifs, :else]
-  @type t() :: %IfPresent{ifs: list(Macfly.Caveat), else: integer()}
+  @type t() :: %IfPresent{ifs: list(Macfly.Caveat.t()), else: integer()}
 
   defimpl Macfly.Caveat do
     def type(_), do: 13

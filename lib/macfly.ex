@@ -97,4 +97,7 @@ defmodule Macfly do
       &for {ticket, %ThirdParty{location: location}} <- &1, into: %{}, do: {ticket, location}
     )
   end
+
+  @spec default_options() :: Options.t()
+  def default_options(), do: %Options{}
 end

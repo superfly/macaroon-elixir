@@ -1,8 +1,6 @@
 defmodule Macfly.Macaroon do
   alias __MODULE__
-  alias Macfly.Options
-  alias Macfly.CaveatSet
-  alias Macfly.Nonce
+  alias Macfly.{Options, CaveatSet, Nonce, Crypto}
 
   @enforce_keys [:nonce, :location, :caveats, :tail]
   defstruct [:nonce, :location, :caveats, :tail]
@@ -10,10 +8,11 @@ defmodule Macfly.Macaroon do
   @type t() :: %Macaroon{
           nonce: Nonce.t(),
           location: String.t(),
-          caveats: list(Macfly.Caveat),
+          caveats: list(Macfly.Caveat.t()),
           tail: binary()
         }
 
+  @spec new(binary(), binary() | Nonce.t(), String.t(), list(Macfly.Caveat.t())) :: Macaroon.t()
   def new(key, kid_or_nonce, location, caveats \\ [])
 
   def new(<<key::binary>>, <<kid::binary>>, <<location::binary>>, caveats) do
@@ -25,7 +24,7 @@ defmodule Macfly.Macaroon do
     nonce
     |> Nonce.to_wire()
     |> Msgpax.pack!()
-    |> sign(key)
+    |> Crypto.sign(key)
     |> then(
       &%Macaroon{
         nonce: nonce,
@@ -37,18 +36,21 @@ defmodule Macfly.Macaroon do
     |> attenuate(caveats)
   end
 
+  @spec attenuate(Macaroon.t(), list(Macfly.Caveat.t())) :: Macaroon.t()
   def attenuate(%Macaroon{caveats: caveats, tail: tail} = m, [caveat | rest])
       when is_list(caveats) do
     [caveat]
     |> CaveatSet.to_wire()
     |> Msgpax.pack!()
-    |> sign(tail)
+    |> Crypto.sign(tail)
     |> then(&%Macaroon{m | caveats: caveats ++ [caveat], tail: &1})
     |> attenuate(rest)
   end
 
   def attenuate(%Macaroon{} = m, []), do: m
 
+  @spec add_third_party(Macaroon.t(), String.t(), <<_::256>>, list(Macfly.Caveat.t())) ::
+          Macaroon.t()
   def add_third_party(m, location, tp_key, caveats \\ [])
 
   def add_third_party(
@@ -61,6 +63,7 @@ defmodule Macfly.Macaroon do
     attenuate(m, [tp])
   end
 
+  @spec decode(String.t(), Options.t()) :: {:ok, Macaroon.t()} | {:error, any()}
   def decode("fm1r_" <> token, %Options{} = o), do: _decode(token, o)
   def decode("fm1a_" <> token, %Options{} = o), do: _decode(token, o)
   def decode("fm2_" <> token, %Options{} = o), do: _decode(token, o)
@@ -76,6 +79,7 @@ defmodule Macfly.Macaroon do
     end
   end
 
+  @spec encode(Macaroon.t()) :: String.t()
   def encode(%Macaroon{} = m), do: to_string(m)
 
   def from_wire([nonce, location, caveats, %Msgpax.Bin{data: tail}], %Options{} = o) do
@@ -103,8 +107,6 @@ defmodule Macfly.Macaroon do
       Msgpax.Bin.new(tail)
     ]
   end
-
-  defp sign(msg, key), do: :crypto.mac(:hmac, :sha256, key, msg)
 
   defimpl String.Chars do
     def to_string(%Macaroon{} = m) do

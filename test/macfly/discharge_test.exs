@@ -1,176 +1,172 @@
 defmodule Macfly.DischargeTest do
   alias Macfly.Discharge
+  alias Macfly.HTTP.Fake
   use ExUnit.Case
   doctest Macfly.Discharge
 
-  test "init immediate discharge" do
-    d =
-      %Discharge{
-        location: URI.parse("https://location"),
-        ticket: "do discharge"
-      }
-      # shouldn't be sent
-      |> Discharge.with_bearer_auth("some other location", "some auth")
+  @location URI.parse("https://location")
 
-    %{state: {:success, "my discharge"}} = Discharge.next(d)
-  end
-
-  test "init poll response" do
-    d =
-      %Discharge{
-        location: URI.parse("https://location"),
-        ticket: "do poll"
-      }
-
-    %{state: {:poll, "/poll/do_discharge"}} = Discharge.next(d)
-  end
-
-  test "init user interactive response" do
-    d =
-      %Discharge{
-        location: URI.parse("https://location"),
-        ticket: "do user interactive"
-      }
-
-    %{state: {:user_interactive, "https://location/user", "/poll/do_discharge"}} =
-      Discharge.next(d)
-  end
-
-  test "init error response" do
-    d =
-      %Discharge{
-        location: URI.parse("https://location"),
-        ticket: "do error"
-      }
-
-    %{state: {:error, "my error"}} = Discharge.next(d)
-  end
-
-  test "init 500 response" do
-    d =
-      %Discharge{
-        location: URI.parse("https://location"),
-        ticket: "do 500"
-      }
-
-    %{state: {:error, {:bad_json, 500, _, _}}} = Discharge.next(d)
-  end
-
-  test "init bogus response" do
-    d =
-      %Discharge{
-        location: URI.parse("https://location"),
-        ticket: "do bogus"
-      }
-
-    %{state: {:error, {:bad_response, %{}}}} = Discharge.next(d)
-  end
-
-  test "init sends auth" do
-    d =
-      %Discharge{
-        location: URI.parse("https://location"),
-        ticket: "require auth"
-      }
-      |> Discharge.with_bearer_auth("some other location", "some auth")
-      |> Discharge.with_bearer_auth("location", "correct")
-
-    %{state: {:success, "my discharge"}} = Discharge.next(d)
-  end
-
-  test "poll discharge" do
-    for base_state <- [{:poll}, {:user_interactive, "https://user"}] do
-      d =
+  describe "init" do
+    test "immediate discharge" do
+      %{state: {:success, "fm2_" <> _}} =
         %Discharge{
-          state: Tuple.append(base_state, "/poll/do_discharge"),
-          location: URI.parse("https://location"),
-          ticket: "do poll"
+          location: @location,
+          ticket: Fake.ticket([:discharge])
         }
         # shouldn't be sent
         |> Discharge.with_bearer_auth("some other location", "some auth")
-
-      %{state: {:success, "my discharge"}} = Discharge.next(d)
+        |> Discharge.next()
     end
-  end
 
-  test "poll full url" do
-    for base_state <- [{:poll}, {:user_interactive, "https://user"}] do
-      d =
+    test "poll response" do
+      %{state: {:poll, "/poll/" <> _}} =
         %Discharge{
-          state: Tuple.append(base_state, "https://location/poll/do_discharge"),
-          location: URI.parse("https://location"),
-          ticket: "do poll"
+          location: @location,
+          ticket: Fake.ticket([:poll, :discharge])
         }
-
-      %{state: {:success, "my discharge"}} = Discharge.next(d)
+        |> Discharge.next()
     end
-  end
 
-  test "poll not ready" do
-    for base_state <- [{:poll}, {:user_interactive, "https://user"}] do
-      d =
+    test "user interactive response" do
+      %{state: {:user_interactive, "https://location/user", "/poll/" <> _}} =
         %Discharge{
-          state: Tuple.append(base_state, "/poll/not_ready"),
-          location: URI.parse("https://location"),
-          ticket: "do poll"
+          location: @location,
+          ticket: Fake.ticket([:user_interactive, :discharge])
         }
-
-      %{state: {:poll, "/poll/not_ready"}} = Discharge.next(d)
+        |> Discharge.next()
     end
-  end
 
-  test "poll error" do
-    for base_state <- [{:poll}, {:user_interactive, "https://user"}] do
-      d =
+    test "error response" do
+      %{state: {:error, "my error"}} =
         %Discharge{
-          state: Tuple.append(base_state, "/poll/do_error"),
-          location: URI.parse("https://location"),
-          ticket: "do poll"
+          location: @location,
+          ticket: Fake.ticket([:error])
         }
-
-      %{state: {:error, "my error"}} = Discharge.next(d)
+        |> Discharge.next()
     end
-  end
 
-  test "poll 500" do
-    for base_state <- [{:poll}, {:user_interactive, "https://user"}] do
-      d =
+    test "500 response" do
+      %{state: {:error, {:bad_json, 500, _, _}}} =
         %Discharge{
-          state: Tuple.append(base_state, "/poll/do_500"),
-          location: URI.parse("https://location"),
-          ticket: "do poll"
+          location: @location,
+          ticket: Fake.ticket([:"500"])
         }
-
-      %{state: {:error, {:bad_json, 500, _, _}}} = Discharge.next(d)
+        |> Discharge.next()
     end
-  end
 
-  test "poll bogus" do
-    for base_state <- [{:poll}, {:user_interactive, "https://user"}] do
-      d =
+    test "bogus response" do
+      %{state: {:error, {:bad_response, %{}}}} =
         %Discharge{
-          state: Tuple.append(base_state, "/poll/do_bogus"),
-          location: URI.parse("https://location"),
-          ticket: "do poll"
+          location: @location,
+          ticket: Fake.ticket([:bogus])
         }
-
-      %{state: {:error, {:bad_response, %{}}}} = Discharge.next(d)
+        |> Discharge.next()
     end
-  end
 
-  test "poll sends auth" do
-    for base_state <- [{:poll}, {:user_interactive, "https://user"}] do
-      d =
+    test "sends auth" do
+      %{state: {:success, "fm2_" <> _}} =
         %Discharge{
-          state: Tuple.append(base_state, "/poll/require_auth"),
-          location: URI.parse("https://location"),
-          ticket: "do poll"
+          location: @location,
+          ticket: Fake.ticket([:require_auth, :discharge])
         }
-        # shouldn't be sent
         |> Discharge.with_bearer_auth("some other location", "some auth")
         |> Discharge.with_bearer_auth("location", "correct")
+        |> Discharge.next()
+    end
+  end
 
-      %{state: {:success, "my discharge"}} = Discharge.next(d)
+  for first <- [:poll, :user_interactive] do
+    describe "#{first}" do
+      test "discharge" do
+        %{state: {:success, "fm2_" <> _}} =
+          %Discharge{
+            state: :init,
+            location: @location,
+            ticket: Fake.ticket([unquote(first), :discharge])
+          }
+          # shouldn't be sent
+          |> Discharge.with_bearer_auth("some other location", "some auth")
+          |> Discharge.next()
+          |> Discharge.next()
+      end
+
+      test "full url" do
+        %{state: {:success, "fm2_" <> _}} =
+          %Discharge{
+            state: :init,
+            location: @location,
+            ticket: Fake.ticket([unquote(first), :discharge])
+          }
+          |> Discharge.next()
+          |> then(fn
+            %{state: {:poll, poll_url}} = d ->
+              poll_url = URI.to_string(URI.merge(@location, poll_url))
+              %{d | state: {:poll, poll_url}}
+
+            %{state: {:user_interactive, user_url, poll_url}} = d ->
+              poll_url = URI.to_string(URI.merge(@location, poll_url))
+              %{d | state: {:user_interactive, user_url, poll_url}}
+          end)
+          |> Discharge.next()
+      end
+
+      test "not ready" do
+        %{state: {:poll, _poll_url}} =
+          %Discharge{
+            state: :init,
+            location: @location,
+            ticket: Fake.ticket([unquote(first), :not_ready])
+          }
+          |> Discharge.next()
+          |> Discharge.next()
+      end
+
+      test "error" do
+        %{state: {:error, "my error"}} =
+          %Discharge{
+            state: :init,
+            location: @location,
+            ticket: Fake.ticket([unquote(first), :error])
+          }
+          |> Discharge.next()
+          |> Discharge.next()
+      end
+
+      test "500" do
+        %{state: {:error, {:bad_json, 500, _, _}}} =
+          %Discharge{
+            state: :init,
+            location: @location,
+            ticket: Fake.ticket([unquote(first), :"500"])
+          }
+          |> Discharge.next()
+          |> Discharge.next()
+      end
+
+      test "bogus" do
+        %{state: {:error, {:bad_response, %{}}}} =
+          %Discharge{
+            state: :init,
+            location: @location,
+            ticket: Fake.ticket([unquote(first), :bogus])
+          }
+          |> Discharge.next()
+          |> Discharge.next()
+      end
+
+      test "sends auth" do
+        %{state: {:success, "fm2_" <> _}} =
+          %Discharge{
+            state: :init,
+            location: @location,
+            ticket: Fake.ticket([unquote(first), :require_auth, :discharge])
+          }
+          # shouldn't be sent
+          |> Discharge.with_bearer_auth("some other location", "some auth")
+          |> Discharge.with_bearer_auth("location", "correct")
+          |> Discharge.next()
+          |> Discharge.next()
+      end
     end
   end
 end
