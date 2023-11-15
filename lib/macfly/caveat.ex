@@ -5,7 +5,7 @@ defprotocol Macfly.Caveat do
   @spec body(t) :: any()
   def body(v)
 
-  @spec from_body(t, any(), Macfly.Options.t()) :: {:ok, t} | {:error, String.t()}
+  @spec from_body(t, any(), Macfly.Options.t()) :: {:ok, t()} | {:error, String.t()}
   def from_body(v, body, o)
 end
 

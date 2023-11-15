@@ -109,10 +109,10 @@ defmodule TestCaveats.IntResourceSetCaveat do
     def type(_), do: 281_474_976_710_661
 
     def body(%IntResourceSetCaveat{value: value}) do
-      value
+      [value]
     end
 
-    def from_body(_, %{} = value, _) do
+    def from_body(_, [%{} = value], _) do
       {:ok, %IntResourceSetCaveat{value: value}}
     end
 
@@ -129,10 +129,10 @@ defmodule TestCaveats.StringResourceSetCaveat do
     def type(_), do: 281_474_976_710_662
 
     def body(%StringResourceSetCaveat{value: value}) do
-      value
+      [value]
     end
 
-    def from_body(_, %{} = value, _) do
+    def from_body(_, [%{} = value], _) do
       {:ok, %StringResourceSetCaveat{value: value}}
     end
 
@@ -149,10 +149,10 @@ defmodule TestCaveats.PrefixResourceSetCaveat do
     def type(_), do: 281_474_976_710_663
 
     def body(%PrefixResourceSetCaveat{value: value}) do
-      value
+      [value]
     end
 
-    def from_body(_, %{} = value, _) do
+    def from_body(_, [%{} = value], _) do
       {:ok, %PrefixResourceSetCaveat{value: value}}
     end
 

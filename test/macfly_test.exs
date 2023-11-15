@@ -69,18 +69,19 @@ defmodule MacflyTest do
           assert %TestCaveats.SliceCaveat{value: <<1, 2, 3>>} == hd(hd(macaroons).caveats)
 
         "Map" ->
-          assert %TestCaveats.MapCaveat{value: %{"foo" => "bar"}} == hd(hd(macaroons).caveats)
+          assert %TestCaveats.MapCaveat{value: %{"a" => "a", "b" => "b", "c" => "c"}} ==
+                   hd(hd(macaroons).caveats)
 
         "IntResourceSet" ->
-          assert %TestCaveats.IntResourceSetCaveat{value: %{123 => 31}} ==
+          assert %TestCaveats.IntResourceSetCaveat{value: %{1 => 31, 2 => 31, 3 => 31}} ==
                    hd(hd(macaroons).caveats)
 
         "StringResourceSet" ->
-          assert %TestCaveats.StringResourceSetCaveat{value: %{"foo" => 31}} ==
+          assert %TestCaveats.StringResourceSetCaveat{value: %{"a" => 31, "b" => 31, "c" => 31}} ==
                    hd(hd(macaroons).caveats)
 
         "PrefixResourceSet" ->
-          assert %TestCaveats.PrefixResourceSetCaveat{value: %{"foo" => 31}} ==
+          assert %TestCaveats.PrefixResourceSetCaveat{value: %{"a" => 31, "b" => 31, "c" => 31}} ==
                    hd(hd(macaroons).caveats)
 
         "Struct" ->
@@ -91,10 +92,10 @@ defmodule MacflyTest do
                      -123,
                      123,
                      Msgpax.Bin.new(<<1, 2, 3>>),
-                     %{"foo" => "bar"},
-                     %{123 => 31},
-                     %{"foo" => 31},
-                     %{"foo" => 31}
+                     %{"a" => "a", "b" => "b", "c" => "c"},
+                     %{1 => 31, 2 => 31, 3 => 31},
+                     %{"a" => 31, "b" => 31, "c" => 31},
+                     %{"a" => 31, "b" => 31, "c" => 31}
                    ]
                  } == hd(hd(macaroons).caveats)
 

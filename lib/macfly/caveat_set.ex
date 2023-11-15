@@ -15,7 +15,11 @@ defmodule Macfly.CaveatSet do
   def from_wire([_], %Options{}), do: {:error, "bad caveat set format"}
 
   def to_wire([caveat | rest]) do
-    [Caveat.type(caveat), Caveat.body(caveat) | to_wire(rest)]
+    [
+      Caveat.type(caveat),
+      Caveat.body(caveat) |> Macfly.MapFix.traverse()
+      | to_wire(rest)
+    ]
   end
 
   def to_wire([]), do: []
