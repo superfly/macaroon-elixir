@@ -3,14 +3,14 @@ defmodule MacflyTest do
   doctest Macfly
 
   @test_caveats [
-    %TestCaveats.StringCaveat{},
-    %TestCaveats.Int64Caveat{},
-    %TestCaveats.Uint64Caveat{},
-    %TestCaveats.SliceCaveat{},
-    %TestCaveats.MapCaveat{},
-    %TestCaveats.IntResourceSetCaveat{},
-    %TestCaveats.StringResourceSetCaveat{},
-    %TestCaveats.PrefixResourceSetCaveat{}
+    TestCaveats.StringCaveat,
+    TestCaveats.Int64Caveat,
+    TestCaveats.Uint64Caveat,
+    TestCaveats.SliceCaveat,
+    TestCaveats.MapCaveat,
+    TestCaveats.IntResourceSetCaveat,
+    TestCaveats.StringResourceSetCaveat,
+    TestCaveats.PrefixResourceSetCaveat
   ]
 
   test "attenuate" do
@@ -109,6 +109,10 @@ defmodule MacflyTest do
 
         "ConfineGitHubOrg" ->
           assert %Macfly.Caveat.ConfineGitHubOrg{id: 123} == hd(hd(macaroons).caveats)
+
+        "BindToParentToken" ->
+          assert %Macfly.Caveat.BindToParentToken{binding_id: <<1, 2, 3>>} ==
+                   hd(hd(macaroons).caveats)
       end
 
       assert header == Macfly.encode(macaroons)

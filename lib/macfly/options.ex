@@ -22,14 +22,13 @@ defmodule Macfly.Options do
 
   @type t() :: %Options{location: String.t(), caveat_types: %{integer() => Caveat.t()}}
 
-  def with_caveats(o \\ %Options{}, caveats)
+  @spec with_caveats(Options.t(), list(module())) :: Options.t()
+  def with_caveats(%Options{caveat_types: ct} = o \\ %Options{}, caveat_modules) do
+    ct =
+      for c <- caveat_modules,
+          into: ct,
+          do: {Caveat.type(c.__struct__()), c.__struct__()}
 
-  def with_caveats(%Options{} = o, []), do: o
-
-  def with_caveats(%Options{} = o, [caveat | rest]) do
-    o.caveat_types
-    |> Map.put(Caveat.type(caveat), caveat)
-    |> then(&%Options{o | caveat_types: &1})
-    |> with_caveats(rest)
+    %{o | caveat_types: ct}
   end
 end

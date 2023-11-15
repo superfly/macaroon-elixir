@@ -175,10 +175,10 @@ defmodule Macfly.Caveat.BindToParentToken do
     def type(_), do: 12
 
     def body(%BindToParentToken{binding_id: binding_id}) do
-      binding_id
+      Msgpax.Bin.new(binding_id)
     end
 
-    def from_body(_, binding_id, _) when is_binary(binding_id) do
+    def from_body(_, %Msgpax.Bin{data: binding_id}, _) do
       {:ok, %BindToParentToken{binding_id: binding_id}}
     end
 
