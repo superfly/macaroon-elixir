@@ -14,6 +14,16 @@ defmodule Macfly.CaveatSet do
     end
   end
 
+  @doc """
+  Encode a set of caveats to message pack.
+  """
+  @spec encode([Macfly.Caveat.t()]) :: binary()
+  def encode(cs) do
+    cs
+    |> to_wire()
+    |> Msgpax.pack!(iodata: false)
+  end
+
   def from_wire(wire_caveats, options \\  %Options{})
 
   def from_wire([type, body | rest], %Options{} = o) when is_integer(type) do

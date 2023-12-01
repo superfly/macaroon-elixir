@@ -14,11 +14,12 @@ defmodule Macfly.CaveatSetTest do
   ] do
     name = to_string(cav) |> String.split(".") |> List.last
 
-    test "decode #{name}" do
+    test "round trip #{name}" do
       %{"caveats" => %{unquote(name) => b64}} = @vectors
       mpack = Base.decode64!(b64)
       {:ok, [decoded]} = CaveatSet.decode(mpack)
       assert decoded.__struct__ == unquote(cav)
+      assert mpack == CaveatSet.encode([decoded])
     end
   end
 end

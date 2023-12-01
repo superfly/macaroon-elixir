@@ -4,7 +4,7 @@ defmodule Macfly.MixProject do
   def project do
     [
       app: :macfly,
-      version: "0.2.9",
+      version: "0.2.10",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
