@@ -64,12 +64,13 @@ defmodule Macfly.Macaroon do
   end
 
   @spec decode(String.t(), Options.t()) :: {:ok, Macaroon.t()} | {:error, any()}
+  def decode(token, options \\ %Options{})
   def decode("fm1r_" <> token, %Options{} = o), do: _decode(token, o)
   def decode("fm1a_" <> token, %Options{} = o), do: _decode(token, o)
   def decode("fm2_" <> token, %Options{} = o), do: _decode(token, o)
   def decode(_, _), do: {:error, "bad prefix"}
 
-  defp _decode(token, %Options{} = o) do
+  defp _decode(token, o) do
     with {:ok, decoded} <- Base.decode64(token),
          {:ok, macaroon} <- Msgpax.unpack(decoded, binary: true) do
       from_wire(macaroon, o)
@@ -82,6 +83,7 @@ defmodule Macfly.Macaroon do
   @spec encode(Macaroon.t()) :: String.t()
   def encode(%Macaroon{} = m), do: to_string(m)
 
+  def from_wire(wire_macaroon, options \\ %Options{})
   def from_wire([nonce, location, caveats, %Msgpax.Bin{data: tail}], %Options{} = o) do
     with {:ok, nonce} <- Nonce.from_wire(nonce),
          {:ok, caveats} <- CaveatSet.from_wire(caveats, o) do

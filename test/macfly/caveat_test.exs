@@ -48,7 +48,7 @@ defmodule Macfly.CaveatTest do
       assert 2 == length(tps)
 
       for tp <- tps do
-        {:ok, _} = ThirdParty.recover_ticket(tp, tp_key, %Macfly.Options{})
+        {:ok, _} = ThirdParty.recover_ticket(tp, tp_key)
       end
     end
 
@@ -66,7 +66,7 @@ defmodule Macfly.CaveatTest do
 
       {:ok, %ThirdParty.Ticket{caveats: [cav]}} =
         tp
-        |> ThirdParty.recover_ticket(tp_key, %Macfly.Options{})
+        |> ThirdParty.recover_ticket(tp_key)
 
       assert cav == cu
     end
@@ -75,7 +75,7 @@ defmodule Macfly.CaveatTest do
   def round_trip(cav) do
     Macfly.Macaroon.new("foo", "bar", "baz", [cav])
     |> to_string()
-    |> Macfly.Macaroon.decode(%Macfly.Options{})
+    |> Macfly.Macaroon.decode()
     |> then(fn {:ok, %Macfly.Macaroon{caveats: [decoded]}} -> decoded end)
     |> then(&assert cav == &1)
   end
