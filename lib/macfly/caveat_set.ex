@@ -2,6 +2,18 @@ defmodule Macfly.CaveatSet do
   alias Macfly.Options
   alias Macfly.Caveat
 
+  @doc """
+  Decode a message pack encoded set of caveats.
+  """
+  @spec decode(binary(), Macfly.Options.t()) :: {:ok, [Caveat.t()]} | {:error, any()}
+  def decode(<<packed::binary>>, %Options{} = o \\  %Options{}) do
+    with {:ok, raw} <- Msgpax.unpack(packed, binary: true) do
+      from_wire(raw, o)
+    else
+      error -> error
+    end
+  end
+
   def from_wire(wire_caveats, options \\  %Options{})
 
   def from_wire([type, body | rest], %Options{} = o) when is_integer(type) do
