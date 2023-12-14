@@ -3,6 +3,7 @@ defmodule Macfly.Options do
   alias Macfly.Caveat
 
   @caveat_modules [
+    Caveat.Organization,
     Caveat.ConfineUser,
     Caveat.ConfineOrganization,
     Caveat.ValidityWindow,
@@ -10,7 +11,11 @@ defmodule Macfly.Options do
     Caveat.BindToParentToken,
     Caveat.IfPresent,
     Caveat.ConfineGoogleHD,
-    Caveat.ConfineGitHubOrg
+    Caveat.ConfineGitHubOrg,
+    Caveat.NoAdminFeatures,
+    Caveat.FlyioUserID,
+    Caveat.GitHubUserID,
+    Caveat.GoogleUserID
   ]
 
   @caveat_types for c <- @caveat_modules,

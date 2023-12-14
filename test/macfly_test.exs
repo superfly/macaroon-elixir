@@ -99,6 +99,10 @@ defmodule MacflyTest do
                    ]
                  } == hd(hd(macaroons).caveats)
 
+        "Organization" ->
+          assert %Macfly.Caveat.Organization{id: 123, permission: Macfly.Action.all()} ==
+                   hd(hd(macaroons).caveats)
+
         "ConfineUser" ->
           assert %Macfly.Caveat.ConfineUser{id: 123} == hd(hd(macaroons).caveats)
 
@@ -113,6 +117,19 @@ defmodule MacflyTest do
 
         "BindToParentToken" ->
           assert %Macfly.Caveat.BindToParentToken{binding_id: <<1, 2, 3>>} ==
+                   hd(hd(macaroons).caveats)
+
+        "NoAdminFeatures" ->
+          assert %Macfly.Caveat.NoAdminFeatures{} == hd(hd(macaroons).caveats)
+
+        "FlyioUserID" ->
+          assert %Macfly.Caveat.FlyioUserID{id: 123} == hd(hd(macaroons).caveats)
+
+        "GitHubUserID" ->
+          assert %Macfly.Caveat.GitHubUserID{id: 123} == hd(hd(macaroons).caveats)
+
+        "GoogleUserID" ->
+          assert %Macfly.Caveat.GoogleUserID{id: 0xDEADBEEF_DEADBEEF_7B} ==
                    hd(hd(macaroons).caveats)
       end
 

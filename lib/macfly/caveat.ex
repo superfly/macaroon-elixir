@@ -9,6 +9,30 @@ defprotocol Macfly.Caveat do
   def from_body(v, body, o)
 end
 
+defmodule Macfly.Caveat.Organization do
+  alias __MODULE__
+  alias Macfly.Action
+
+  @enforce_keys [:id, :permission]
+  defstruct [:id, :permission]
+  @type t() :: %Organization{id: integer(), permission: Action.t()}
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 0
+
+    def body(%Organization{id: id, permission: p}), do: [id, Action.to_wire(p)]
+
+    def from_body(_, [id, p], _) when is_integer(id) do
+      case Action.from_wire(p) do
+        {:ok, p} -> {:ok, %Organization{id: id, permission: p}}
+        {:error, _} = err -> err
+      end
+    end
+
+    def from_body(_, _, _), do: {:error, "bad Organization format"}
+  end
+end
+
 defmodule Macfly.Caveat.ValidityWindow do
   alias __MODULE__
 
@@ -247,6 +271,89 @@ defmodule Macfly.Caveat.ConfineGitHubOrg do
     end
 
     def from_body(_, _, _), do: {:error, "bad ConfineGitHubOrg format"}
+  end
+end
+
+defmodule Macfly.Caveat.NoAdminFeatures do
+  alias __MODULE__
+
+  defstruct []
+  @type t() :: %NoAdminFeatures{}
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 22
+
+    def body(%NoAdminFeatures{}), do: []
+
+    def from_body(_, [], _) do
+      {:ok, %NoAdminFeatures{}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad NoAdminFeatures format"}
+  end
+end
+
+defmodule Macfly.Caveat.FlyioUserID do
+  alias __MODULE__
+
+  @enforce_keys [:id]
+  defstruct [:id]
+  @type t() :: %FlyioUserID{id: integer()}
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 23
+
+    def body(%FlyioUserID{id: id}), do: id
+
+    def from_body(_, id, _) when is_integer(id) do
+      {:ok, %FlyioUserID{id: id}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad FlyioUserID format"}
+  end
+end
+
+defmodule Macfly.Caveat.GitHubUserID do
+  alias __MODULE__
+
+  @enforce_keys [:id]
+  defstruct [:id]
+  @type t() :: %GitHubUserID{id: integer()}
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 24
+
+    def body(%GitHubUserID{id: id}), do: id
+
+    def from_body(_, id, _) when is_integer(id) do
+      {:ok, %GitHubUserID{id: id}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad GitHubUserID format"}
+  end
+end
+
+defmodule Macfly.Caveat.GoogleUserID do
+  alias __MODULE__
+
+  @enforce_keys [:id]
+  defstruct [:id]
+  @type t() :: %GoogleUserID{id: integer()}
+
+  defimpl Macfly.Caveat do
+    def type(_), do: 25
+
+    def body(%GoogleUserID{id: iid}) do
+      n_bytes = trunc(Float.ceil(:math.log(iid) / :math.log(256)))
+      Msgpax.Bin.new(<<iid::size(n_bytes)-unit(8)>>)
+    end
+
+    def from_body(_, %Msgpax.Bin{data: bid}, _) when is_binary(bid) and byte_size(bid) <= 255 do
+      <<iid::size(byte_size(bid))-unit(8)>> = bid
+      {:ok, %GoogleUserID{id: iid}}
+    end
+
+    def from_body(_, body, _), do: {:error, "bad GoogleUserID format #{inspect(body)}"}
   end
 end
 
