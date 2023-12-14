@@ -2,17 +2,19 @@ defmodule Macfly.Discharge do
   alias __MODULE__
   alias Macfly.HTTP
 
-  @enforce_keys [:location, :ticket]
+  @enforce_keys [:location, :ticket, :id]
   defstruct location: nil,
             ticket: nil,
             state: :init,
-            auth: %{}
+            auth: %{},
+            id: nil
 
   @type t() :: %Discharge{
           location: URI.t(),
-          ticket: binary(),
+          ticket: binary()|nil,
           state: state(),
-          auth: map()
+          auth: map(),
+          id: binary()
         }
 
   @init_path "/.well-known/macfly/3p"
@@ -24,6 +26,14 @@ defmodule Macfly.Discharge do
           | {:user_interactive, String.t(), String.t()}
           | {:success, String.t()}
           | {:error, any()}
+
+  def new(location: location, ticket: ticket) do
+    %Discharge{
+      location: location,
+      ticket: ticket,
+      id: :crypto.hash(:sha256, ticket)
+    }
+  end
 
   def with_bearer_auth(%Discharge{} = d, hostname, token) do
     d

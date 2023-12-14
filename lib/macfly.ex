@@ -3,6 +3,8 @@ defmodule Macfly do
   alias Macfly.Options
   alias Macfly.Caveat
   alias Macfly.Discharge
+  alias Macfly.Caveat.ThirdParty
+  alias Macfly.Nonce
 
   @doc """
   Decode a macaroon header into a list of Macaroon structs.
@@ -68,19 +70,16 @@ defmodule Macfly do
   """
   @spec discharges(list(Macaroon.t()), Options.t()) :: list(Discharge.t())
   def discharges(macaroons, %Options{} = o \\ %Options{}) do
-    for {ticket, location} <- tickets(macaroons, o), into: [] do
-      %Discharge{
-        location: location,
-        ticket: ticket,
-        state: :init
-      }
+    for %ThirdParty{location: l, ticket: t} <- undischarged_tp_caveats(macaroons, o) do
+      Discharge.new(location: l, ticket: t)
     end
   end
 
-  defp tickets(macaroons, %Options{location: location}) do
-    alias Macfly.Caveat.ThirdParty
-    alias Macfly.Nonce
-
+  @spec undischarged_tp_caveats(list(Macaroon.t()), Options.t()) :: list({binary(), String.t()})
+  defp undischarged_tp_caveats(macaroons, %Options{location: location}) do
+    # Create mapping from tp ticket to either the tp caveat that it came from or
+    # the discharge macaroon that discharges it. At the end, the tickets mapping
+    # to a tp caveat are necessarily undischarged.
     for m <- macaroons, reduce: %{} do
       acc ->
         case m do
@@ -94,7 +93,7 @@ defmodule Macfly do
         end
     end
     |> then(
-      &for {ticket, %ThirdParty{location: location}} <- &1, into: %{}, do: {ticket, location}
+      &for {_, %ThirdParty{} = tp} <- &1, do: tp
     )
   end
 
