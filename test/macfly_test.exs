@@ -151,9 +151,11 @@ defmodule MacflyTest do
     o = %Macfly.Options{location: location}
     {:ok, macaroons} = Macfly.decode(header)
 
+    loc = URI.parse("undischarged")
+
     [
       %Macfly.Discharge{
-        location: "undischarged",
+        location: ^loc,
         ticket: <<_::binary>>,
         state: :init
       }

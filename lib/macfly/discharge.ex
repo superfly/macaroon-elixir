@@ -11,7 +11,7 @@ defmodule Macfly.Discharge do
 
   @type t() :: %Discharge{
           location: URI.t(),
-          ticket: binary()|nil,
+          ticket: binary() | nil,
           state: state(),
           auth: map(),
           id: binary()
@@ -29,7 +29,7 @@ defmodule Macfly.Discharge do
 
   def new(location: location, ticket: ticket) do
     %Discharge{
-      location: location,
+      location: URI.parse(location),
       ticket: ticket,
       id: :crypto.hash(:sha256, ticket)
     }
@@ -51,10 +51,10 @@ defmodule Macfly.Discharge do
   @spec next(%Discharge{state: state()}) :: %Discharge{state: state()}
   def next(%Discharge{state: {:error, _}} = d), do: d
 
-  def next(%Discharge{state: :init} = d), do: do_init(d, url(d, @init_path))
+  def next(%Discharge{state: :init} = d), do: do_init(d, append_path(d, @init_path))
 
   def next(%Discharge{state: {:poll, poll_url}} = d) do
-    u = url(d, poll_url)
+    u = merge_url(d, poll_url)
     h = headers(d, u)
 
     u
@@ -87,7 +87,7 @@ defmodule Macfly.Discharge do
 
   defp handle_init_response({:ok, %HTTPoison.MaybeRedirect{status_code: s, redirect_url: r}}, d)
        when s in [307, 308] do
-    do_init(d, url(d, r))
+    do_init(d, merge_url(d, r))
   end
 
   defp handle_init_response({:ok, %HTTPoison.Response{status_code: status, body: body}}, d) do
@@ -102,7 +102,7 @@ defmodule Macfly.Discharge do
         %Discharge{d | state: {:poll, poll_url}}
 
       {:ok, %{"user_interactive" => %{"user_url" => user_url, "poll_url" => poll_url}}} ->
-        user_url = url(d, user_url) |> to_string
+        user_url = merge_url(d, user_url) |> to_string
         %Discharge{d | state: {:user_interactive, user_url, poll_url}}
 
       {:ok, j} ->
@@ -140,7 +140,17 @@ defmodule Macfly.Discharge do
   defp handle_poll_response({:ok, r}, d),
     do: %Discharge{d | state: {:error, {:unexpected_response, r}}}
 
-  defp url(%Discharge{location: l}, path), do: URI.merge(l, path)
+  defp merge_url(%Discharge{location: l}, path), do: URI.merge(l, path)
+
+  # not available until elixir 1.15.0
+  # https://github.com/elixir-lang/elixir/blob/53f45a93b62842e202458c3bc1bc604e3c154e43/lib/elixir/lib/uri.ex#L1013-L1019
+  defp append_path(%Discharge{location: %URI{path: path} = uri}, "/" <> rest = all) do
+    cond do
+      path == nil -> %{uri | path: all}
+      path != "" and :binary.last(path) == ?/ -> %{uri | path: path <> rest}
+      true -> %{uri | path: path <> all}
+    end
+  end
 
   defp headers(%Discharge{auth: a}, %URI{host: h}, base \\ []) do
     case Map.get(a, h) do
