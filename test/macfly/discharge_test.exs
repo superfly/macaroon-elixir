@@ -37,7 +37,7 @@ defmodule Macfly.DischargeTest do
     end
 
     test "error response" do
-      %{state: {:error, "my error"}} =
+      %{state: {:error, 400, "my error"}} =
         Discharge.new(
           location: @location,
           ticket: Fake.ticket([:error])
@@ -46,7 +46,7 @@ defmodule Macfly.DischargeTest do
     end
 
     test "500 response" do
-      %{state: {:error, {:bad_json, 500, _, _}}} =
+      %{state: {:error, 500, {:bad_json, _, _}}} =
         Discharge.new(
           location: @location,
           ticket: Fake.ticket([:"500"])
@@ -55,7 +55,7 @@ defmodule Macfly.DischargeTest do
     end
 
     test "bogus response" do
-      %{state: {:error, {:bad_response, %{}}}} =
+      %{state: {:error, 201, {:bad_response, %{}}}} =
         Discharge.new(
           location: @location,
           ticket: Fake.ticket([:bogus])
@@ -119,7 +119,7 @@ defmodule Macfly.DischargeTest do
       end
 
       test "error" do
-        %{state: {:error, "my error"}} =
+        %{state: {:error, 400, "my error"}} =
           Discharge.new(
             location: @location,
             ticket: Fake.ticket([unquote(first), :error])
@@ -129,7 +129,7 @@ defmodule Macfly.DischargeTest do
       end
 
       test "500" do
-        %{state: {:error, {:bad_json, 500, _, _}}} =
+        %{state: {:error, 500, {:bad_json, _, _}}} =
           Discharge.new(
             location: @location,
             ticket: Fake.ticket([unquote(first), :"500"])
@@ -139,7 +139,7 @@ defmodule Macfly.DischargeTest do
       end
 
       test "bogus" do
-        %{state: {:error, {:bad_response, %{}}}} =
+        %{state: {:error, 200, {:bad_response, %{}}}} =
           Discharge.new(
             location: @location,
             ticket: Fake.ticket([unquote(first), :bogus])

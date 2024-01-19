@@ -94,7 +94,7 @@ defmodule Macfly.HTTP.Fake do
   def do_behavior_poll([first, :error], _t, _h) when first in [:poll, :user_interactive] do
     %{error: "my error"}
     |> JSON.encode!()
-    |> then(&{:ok, %HTTPoison.Response{status_code: 200, body: &1}})
+    |> then(&{:ok, %HTTPoison.Response{status_code: 400, body: &1}})
   end
 
   def do_behavior_poll([first, :"500"], _t, _h) when first in [:poll, :user_interactive] do
@@ -154,7 +154,7 @@ defmodule Macfly.HTTP.Fake do
   defp do_behavior_init([:error], _t, _h) do
     %{error: "my error"}
     |> JSON.encode!()
-    |> then(&{:ok, %HTTPoison.Response{status_code: 201, body: &1}})
+    |> then(&{:ok, %HTTPoison.Response{status_code: 400, body: &1}})
   end
 
   defp do_behavior_init([:"500"], _t, _h) do

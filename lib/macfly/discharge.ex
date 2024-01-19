@@ -20,12 +20,19 @@ defmodule Macfly.Discharge do
   @init_path "/.well-known/macfly/3p"
   @json_header ["Content-Type": "application/json"]
 
+  @type error() ::
+          {:error, :failed, HTTPoison.Error.t()}
+          | {:error, integer(),
+             String.t()
+             | {:bad_response, term()}
+             | {:bad_json, String.t(), term()}}
+
   @type state() ::
           :init
           | {:poll, String.t()}
           | {:user_interactive, String.t(), String.t()}
           | {:success, String.t()}
-          | {:error, any()}
+          | error()
 
   def new(location: location, ticket: ticket) do
     %Discharge{
@@ -83,7 +90,7 @@ defmodule Macfly.Discharge do
   end
 
   defp handle_init_response({:error, e}, d),
-    do: %Discharge{d | state: {:error, {:failed_request, e}}}
+    do: %Discharge{d | state: {:error, :failed, e}}
 
   defp handle_init_response({:ok, %HTTPoison.MaybeRedirect{status_code: s, redirect_url: r}}, d)
        when s in [307, 308] do
@@ -92,9 +99,6 @@ defmodule Macfly.Discharge do
 
   defp handle_init_response({:ok, %HTTPoison.Response{status_code: status, body: body}}, d) do
     case JSON.decode(body) do
-      {:ok, %{"error" => error}} ->
-        %Discharge{d | state: {:error, error}}
-
       {:ok, %{"discharge" => discharge}} ->
         %Discharge{d | state: {:success, discharge}}
 
@@ -105,40 +109,37 @@ defmodule Macfly.Discharge do
         user_url = merge_url(d, user_url) |> to_string
         %Discharge{d | state: {:user_interactive, user_url, poll_url}}
 
+      {:ok, %{"error" => error}} ->
+        %Discharge{d | state: {:error, status, error}}
+
       {:ok, j} ->
-        %Discharge{d | state: {:error, {:bad_response, j}}}
+        %Discharge{d | state: {:error, status, {:bad_response, j}}}
 
       {:error, error} ->
-        %Discharge{d | state: {:error, {:bad_json, status, body, error}}}
+        %Discharge{d | state: {:error, status, {:bad_json, body, error}}}
     end
   end
-
-  defp handle_init_response({:ok, r}, d),
-    do: %Discharge{d | state: {:error, {:unexpected_response, r}}}
 
   defp handle_poll_response({:ok, %HTTPoison.Response{status_code: 202}}, d), do: d
 
   defp handle_poll_response({:error, e}, d),
-    do: %Discharge{d | state: {:error, {:failed_request, e}}}
+    do: %Discharge{d | state: {:error, :failed, e}}
 
   defp handle_poll_response({:ok, %HTTPoison.Response{status_code: status, body: body}}, d) do
     case JSON.decode(body) do
-      {:ok, %{"error" => error}} ->
-        %Discharge{d | state: {:error, error}}
-
       {:ok, %{"discharge" => discharge}} ->
         %Discharge{d | state: {:success, discharge}}
 
+      {:ok, %{"error" => error}} ->
+        %Discharge{d | state: {:error, status, error}}
+
       {:ok, j} ->
-        %Discharge{d | state: {:error, {:bad_response, j}}}
+        %Discharge{d | state: {:error, status, {:bad_response, j}}}
 
       {:error, error} ->
-        %Discharge{d | state: {:error, {:bad_json, status, body, error}}}
+        %Discharge{d | state: {:error, status, {:bad_json, body, error}}}
     end
   end
-
-  defp handle_poll_response({:ok, r}, d),
-    do: %Discharge{d | state: {:error, {:unexpected_response, r}}}
 
   defp merge_url(%Discharge{location: l}, path), do: URI.merge(l, path)
 
