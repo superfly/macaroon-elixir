@@ -14,6 +14,9 @@ defmodule Macfly.Action do
   @none 0b00000
   @all 0b11111
 
+  def none(%Action{} \\ %Action{}),
+    do: %Action{read: false, write: false, create: false, delete: false, control: false}
+
   def all(%Action{} \\ %Action{}),
     do: %Action{read: true, write: true, create: true, delete: true, control: true}
 
@@ -22,6 +25,20 @@ defmodule Macfly.Action do
   def create(%Action{} = a \\ %Action{}), do: %{a | create: true}
   def delete(%Action{} = a \\ %Action{}), do: %{a | delete: true}
   def control(%Action{} = a \\ %Action{}), do: %{a | control: true}
+
+  def from_human(human) when is_binary(human), do: from_human(human, human, none())
+
+  def from_human(original, human, acc) do
+    case human do
+      "c" <> rest -> from_human(original, rest, create(acc))
+      "d" <> rest -> from_human(original, rest, delete(acc))
+      "w" <> rest -> from_human(original, rest, write(acc))
+      "r" <> rest -> from_human(original, rest, read(acc))
+      "C" <> rest -> from_human(original, rest, control(acc))
+      "" -> acc
+      <<perm::utf8, _rest>> -> raise "unknown permission: #{perm} in #{original}"
+    end
+  end
 
   def from_wire(i) when is_integer(i) and i in @none..@all do
     <<control::1, delete::1, create::1, write::1, read::1>> = <<i::5>>
