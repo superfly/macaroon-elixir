@@ -1,6 +1,6 @@
 # Macfly
 
-**TODO: Add description**
+This library handles Fly.io Macaroon encoding, decoding, attentuation, etc..
 
 ## Installation
 
@@ -15,7 +15,8 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/macfly>.
+## Documentation
 
+[Hex Docs](https://hexdocs.pm/macfly/)
+
+To generate documentation locally run `mix docs` and open `doc/index.html` in your browser.
