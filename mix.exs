@@ -31,7 +31,7 @@ defmodule Macfly.MixProject do
       {:httpoison, "~> 1.8", only: [:dev, :test]},
 >>>>>>> c6cf8d9 (update readme with instructions on how to generate hex docs locally)
       {:json, "~> 1.4"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
   end
 
