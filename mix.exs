@@ -1,16 +1,20 @@
 defmodule Macfly.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/superfly/macaroon-elixir"
+  @version "0.2.15"
+
   def project do
     [
       app: :macfly,
-      version: "0.2.15",
+      version: @version,
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       consolidate_protocols: Mix.env() != :test,
       elixirc_paths: if(Mix.env() == :test, do: [:lib, :test], else: [:lib]),
-      package: package()
+      package: package(),
+      docs: docs()
     ]
   end
 
@@ -40,7 +44,16 @@ defmodule Macfly.MixProject do
       name: "macfly",
       description: "library for working with fly.io macaroon tokens",
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/superfly/macaroon-elixir"}
+      links: %{"GitHub" => @source_url}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md"],
+      source_ref: "v#{@version}",
+      source_url: @source_url
     ]
   end
 end
