@@ -25,4 +25,20 @@ defmodule Macfly.ActionTest do
       assert %Action{control: true, read: true, delete: true, write: true, create: false} == Action.from_human("Crdw")
     end
   end
+
+  describe "to_human/1" do
+    test "can convert a permission to a human-readable string" do
+      assert "r" == Action.to_human(Action.read())
+      assert "w" == Action.to_human(Action.write())
+      assert "c" == Action.to_human(Action.create())
+      assert "d" == Action.to_human(Action.delete())
+      assert "C" == Action.to_human(Action.control())
+    end
+
+    test "can convert multiple permissions to a human-readable string, in reliable order" do
+      assert "rwcd" == Action.to_human(%Action{read: true, write: true, delete: true, create: true, control: false})
+      assert "rwdC" == Action.to_human(%Action{control: true, read: true, delete: true, write: true, create: false})
+      assert "rwcdC" == Action.to_human(Action.all())
+    end
+  end
 end

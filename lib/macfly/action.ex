@@ -30,14 +30,20 @@ defmodule Macfly.Action do
 
   def from_human(original, human, acc) do
     case human do
+      "r" <> rest -> from_human(original, rest, read(acc))
+      "w" <> rest -> from_human(original, rest, write(acc))
       "c" <> rest -> from_human(original, rest, create(acc))
       "d" <> rest -> from_human(original, rest, delete(acc))
-      "w" <> rest -> from_human(original, rest, write(acc))
-      "r" <> rest -> from_human(original, rest, read(acc))
       "C" <> rest -> from_human(original, rest, control(acc))
       "" -> acc
       <<perm::utf8, _rest>> -> raise "unknown permission: #{perm} in #{original}"
     end
+  end
+
+  def to_human(%Action{} = action) do
+    Enum.reduce([{:control, "C"}, {:delete, "d"}, {:create, "c"}, {:write, "w"}, {:read, "r"}], "", fn {key, mask}, acc ->
+      if get_in(action, [Access.key(key, false)]), do: mask <> acc, else: acc
+    end)
   end
 
   def from_wire(i) when is_integer(i) and i in @none..@all do
