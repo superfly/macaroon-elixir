@@ -1,4 +1,7 @@
 defmodule Macfly do
+  @moduledoc """
+  Macfly is a library for managing Fly macaroons.
+  """
   alias Macfly.Macaroon
   alias Macfly.Options
   alias Macfly.Caveat
@@ -92,9 +95,7 @@ defmodule Macfly do
             Map.put(acc, ticket, m)
         end
     end
-    |> then(
-      &for {_, %ThirdParty{} = tp} <- &1, do: tp
-    )
+    |> then(&for {_, %ThirdParty{} = tp} <- &1, do: tp)
   end
 
   @spec default_options() :: Options.t()
