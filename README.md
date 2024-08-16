@@ -24,9 +24,17 @@ end
 # for example tokens, see the tests or test/vectors.json file
 token = "FlyV1 fm2_lJPE..."
 
+
+# supports single token or tokens that are seprated by commas
 {:ok, [%Macfly.Macaroon{}] = macaroons} = Macfly.decode(token)
 
 token = Macfly.encode(macaroons)
+
+# decode a single token (note: token without prefix FlyV1)
+{:ok, %Macfly.Macaroon{} = macaroon} = Macfly.Macaroon.decide("fm2_lJPE...")
+
+# encode a single token (note: token without prefix FlyV1)
+token = Macfly.Macaroon.encode(macaroon)
 ```
 
 ### Attenuating a Macaroon
@@ -43,7 +51,7 @@ caveats = [
   }
 ]
 
-options = %Macfly.Options{location: "abcd"}
+options = %Macfly.Options{location: "29745b8fbe60e62fe8359198aea82643"}
           |> Macfly.Options.with_caveats([Macfly.Caveat.Organization])
 
 new_macaroons = Macfly.attenuate(macaroons, caveats, options)
