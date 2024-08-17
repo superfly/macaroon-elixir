@@ -11,7 +11,7 @@ The package can be installed by adding `macfly` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:macfly, "~> 0.2.15"}
+    {:macfly, "~> 0.2.16"}
   ]
 end
 ```
