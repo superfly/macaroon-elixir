@@ -41,9 +41,13 @@ defmodule Macfly.Action do
   end
 
   def to_human(%Action{} = action) do
-    Enum.reduce([{:control, "C"}, {:delete, "d"}, {:create, "c"}, {:write, "w"}, {:read, "r"}], "", fn {key, mask}, acc ->
-      if get_in(action, [Access.key(key, false)]), do: mask <> acc, else: acc
-    end)
+    Enum.reduce(
+      [{:control, "C"}, {:delete, "d"}, {:create, "c"}, {:write, "w"}, {:read, "r"}],
+      "",
+      fn {key, mask}, acc ->
+        if get_in(action, [Access.key(key, false)]), do: mask <> acc, else: acc
+      end
+    )
   end
 
   def from_wire(i) when is_integer(i) and i in @none..@all do
@@ -77,5 +81,11 @@ defmodule Macfly.Action do
     >>
 
     i
+  end
+
+  defimpl Msgpax.Packer, for: Action do
+    def pack(%Action{} = action) do
+      Macfly.Action.to_wire(action)
+    end
   end
 end
