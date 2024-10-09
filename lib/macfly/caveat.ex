@@ -114,6 +114,8 @@ defmodule Macfly.Caveat.FeatureSet do
   Use this method to construct a `FeatureSet` caveat.
   This is to ensure the `resource_name` is set to `"features"`,
   since we match on that string when decoding this caveat.
+  This method also ensures that the features provided are valid,
+  raising if there are any unexpected features.
   """
   @spec build!(ResourceSet.resources(features())) :: t()
   def build!(features) do
