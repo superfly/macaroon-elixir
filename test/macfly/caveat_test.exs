@@ -1,6 +1,8 @@
 defmodule Macfly.CaveatTest do
   use ExUnit.Case
 
+  alias Macfly.Action
+
   alias Macfly.Caveat.{
     ValidityWindow,
     ConfineUser,
@@ -10,7 +12,8 @@ defmodule Macfly.CaveatTest do
     ConfineGoogleHD,
     ConfineGitHubOrg,
     UnrecognizedCaveat,
-    IfPresent
+    IfPresent,
+    Apps
   }
 
   test "ValidityWindow", do: round_trip(%ValidityWindow{not_before: 1, not_after: 2})
@@ -22,6 +25,7 @@ defmodule Macfly.CaveatTest do
   test "ConfineGoogleHD", do: round_trip(%ConfineGoogleHD{hd: "a"})
   test "ConfineGitHubOrg", do: round_trip(%ConfineGitHubOrg{id: 1})
   test "UnrecognizedCaveat", do: round_trip(%UnrecognizedCaveat{type: 9999, body: 1})
+  test "Apps", do: round_trip(Apps.build(%{"1234" => Action.read(), "5678" => Action.control()}))
 
   describe "ThirdParty" do
     alias Macfly.Caveat.ThirdParty
@@ -73,10 +77,9 @@ defmodule Macfly.CaveatTest do
   end
 
   def round_trip(cav) do
-    Macfly.Macaroon.new("foo", "bar", "baz", [cav])
-    |> to_string()
-    |> Macfly.Macaroon.decode()
-    |> then(fn {:ok, %Macfly.Macaroon{caveats: [decoded]}} -> decoded end)
-    |> then(&assert cav == &1)
+    assert {:ok, %Macfly.Macaroon{caveats: [^cav]}} =
+             Macfly.Macaroon.new("foo", "bar", "baz", [cav])
+             |> to_string()
+             |> Macfly.Macaroon.decode()
   end
 end

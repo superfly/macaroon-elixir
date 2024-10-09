@@ -41,24 +41,36 @@ defmodule Macfly.Caveat.Apps do
   defstruct [:resource_set]
   @type t() :: %__MODULE__{resource_set: ResourceSet.t()}
 
+  @resource_name "apps"
+
+  @doc """
+  Use this method to construct an `Apps` caveat.
+  This is to ensure the `resource_name` is set to `"apps"`,
+  since we match on that string when decoding this caveat.
+  """
   @spec build(ResourceSet.resources()) :: t()
   def build(apps),
     do: %Apps{
-      resource_set: %ResourceSet{resource_name: "apps", resources: apps}
+      resource_set: %ResourceSet{resource_name: @resource_name, resources: apps}
     }
 
   defimpl Macfly.Caveat do
     alias Macfly.ResourceSet
+
+    @resource_name "apps"
+
     def type(_), do: 3
 
     def body(%Apps{resource_set: resource_set}),
       do: ResourceSet.to_wire(resource_set)
 
-    def from_body(_, %{"apps" => apps}, _) do
-      %Apps{
-        resource_set: ResourceSet.from_wire("apps", apps)
-      }
+    def from_body(_, %{@resource_name => apps}, _) do
+      with {:ok, resource_set} <- ResourceSet.from_wire(@resource_name, apps) do
+        {:ok, %Apps{resource_set: resource_set}}
+      end
     end
+
+    def from_body(_, _, _), do: {:error, "bad Apps format"}
   end
 end
 

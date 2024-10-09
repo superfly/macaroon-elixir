@@ -17,7 +17,7 @@ defmodule Macfly.ResourceSet do
       end)
 
     case result do
-      {:ok, acc} -> %ResourceSet{resource_name: resource_name, resources: acc}
+      {:ok, acc} -> {:ok, %ResourceSet{resource_name: resource_name, resources: acc}}
       {:error, _} -> {:error, "failed to decode resource set"}
     end
   end
