@@ -5,6 +5,7 @@ defmodule Macfly.Options do
   @caveat_modules [
     Caveat.Organization,
     Caveat.Apps,
+    Caveat.FeatureSet,
     Caveat.ConfineUser,
     Caveat.ConfineOrganization,
     Caveat.ValidityWindow,

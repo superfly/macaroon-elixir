@@ -39,7 +39,8 @@ defmodule Macfly.Caveat.Apps do
 
   @enforce_keys [:resource_set]
   defstruct [:resource_set]
-  @type t() :: %__MODULE__{resource_set: ResourceSet.t()}
+  @type app_id :: String.t()
+  @type t() :: %__MODULE__{resource_set: ResourceSet.t(app_id())}
 
   @resource_name "apps"
 
@@ -48,9 +49,9 @@ defmodule Macfly.Caveat.Apps do
   This is to ensure the `resource_name` is set to `"apps"`,
   since we match on that string when decoding this caveat.
   """
-  @spec build(ResourceSet.resources()) :: t()
+  @spec build(ResourceSet.resources(app_id())) :: t()
   def build(apps),
-    do: %Apps{
+    do: %__MODULE__{
       resource_set: %ResourceSet{resource_name: @resource_name, resources: apps}
     }
 
@@ -61,16 +62,88 @@ defmodule Macfly.Caveat.Apps do
 
     def type(_), do: 3
 
-    def body(%Apps{resource_set: resource_set}),
-      do: ResourceSet.to_wire(resource_set)
+    def body(%Apps{} = caveat),
+      do: ResourceSet.to_wire(caveat)
 
     def from_body(_, %{@resource_name => apps}, _) do
-      with {:ok, resource_set} <- ResourceSet.from_wire(@resource_name, apps) do
-        {:ok, %Apps{resource_set: resource_set}}
-      end
+      ResourceSet.from_wire_struct(Apps, @resource_name, apps)
     end
 
     def from_body(_, _, _), do: {:error, "bad Apps format"}
+  end
+end
+
+defmodule Macfly.Caveat.FeatureSet do
+  alias Macfly.ResourceSet
+  alias __MODULE__
+
+  @enforce_keys [:resource_set]
+  defstruct [:resource_set]
+
+  def features(), do: ~w(wg
+  domain
+  site
+  builder
+  addon
+  checks
+  membership
+  billing
+  "litefs-cloud"
+  deletion
+  document_signing
+  authentication)a
+
+  @type features ::
+          :wg
+          | :domain
+          | :site
+          | :builder
+          | :addon
+          | :checks
+          | :membership
+          | :billing
+          | :"litefs-cloud"
+          | :deletion
+          | :document_signing
+          | :authentication
+  @type t() :: %__MODULE__{resource_set: ResourceSet.t(features())}
+
+  @resource_name "features"
+
+  @doc """
+  Use this method to construct a `FeatureSet` caveat.
+  This is to ensure the `resource_name` is set to `"features"`,
+  since we match on that string when decoding this caveat.
+  """
+  @spec build!(ResourceSet.resources(features())) :: t()
+  def build!(features) do
+    if Map.keys(features)
+       |> Enum.any?(fn feature -> !Enum.member?(features(), feature) end) do
+      raise "invalid features"
+    end
+
+    %__MODULE__{
+      resource_set: %ResourceSet{resource_name: @resource_name, resources: features}
+    }
+  end
+
+  defimpl Macfly.Caveat do
+    alias Macfly.ResourceSet
+
+    @resource_name "features"
+
+    def type(_), do: 5
+
+    def body(%FeatureSet{} = caveat),
+      do: ResourceSet.to_wire(caveat)
+
+    def from_body(_, %{@resource_name => apps}, _) do
+      ResourceSet.from_wire_struct(FeatureSet, @resource_name, apps,
+        allowed_resources: FeatureSet.features()
+      )
+    end
+
+    def from_body(_, _, _), do: {:error, "bad FeatureSet format"}
   end
 end
 

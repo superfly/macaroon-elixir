@@ -1,6 +1,7 @@
 defmodule Macfly.CaveatTest do
   use ExUnit.Case
 
+  alias Macfly.ResourceSet
   alias Macfly.Action
 
   alias Macfly.Caveat.{
@@ -13,7 +14,8 @@ defmodule Macfly.CaveatTest do
     ConfineGitHubOrg,
     UnrecognizedCaveat,
     IfPresent,
-    Apps
+    Apps,
+    FeatureSet
   }
 
   test "ValidityWindow", do: round_trip(%ValidityWindow{not_before: 1, not_after: 2})
@@ -26,6 +28,30 @@ defmodule Macfly.CaveatTest do
   test "ConfineGitHubOrg", do: round_trip(%ConfineGitHubOrg{id: 1})
   test "UnrecognizedCaveat", do: round_trip(%UnrecognizedCaveat{type: 9999, body: 1})
   test "Apps", do: round_trip(Apps.build(%{"1234" => Action.read(), "5678" => Action.control()}))
+
+  test "FeatureSet",
+    do: round_trip(FeatureSet.build!(%{wg: Action.read(), builder: Action.all()}))
+
+  test "cannot build FeatureSet with invalid features" do
+    assert_raise RuntimeError, "invalid features", fn ->
+      FeatureSet.build!(%{random_feature: Action.read()})
+    end
+  end
+
+  test "cannot decode FeatureSet with invalid features" do
+    # manually construct the caveat because the build!/1 function would raise
+    cav = %FeatureSet{
+      resource_set: %ResourceSet{
+        resource_name: "features",
+        resources: %{random_feature: Action.read()}
+      }
+    }
+
+    assert {:error, ~s(resource not allowed: "random_feature")} =
+             Macfly.Macaroon.new("foo", "bar", "baz", [cav])
+             |> to_string()
+             |> Macfly.Macaroon.decode()
+  end
 
   describe "ThirdParty" do
     alias Macfly.Caveat.ThirdParty
