@@ -33,6 +33,35 @@ defmodule Macfly.Caveat.Organization do
   end
 end
 
+defmodule Macfly.Caveat.Apps do
+  alias Macfly.ResourceSet
+  alias __MODULE__
+
+  @enforce_keys [:resource_set]
+  defstruct [:resource_set]
+  @type t() :: %__MODULE__{resource_set: ResourceSet.t()}
+
+  @spec build(ResourceSet.resources()) :: t()
+  def build(apps),
+    do: %Apps{
+      resource_set: %ResourceSet{resource_name: "apps", resources: apps}
+    }
+
+  defimpl Macfly.Caveat do
+    alias Macfly.ResourceSet
+    def type(_), do: 3
+
+    def body(%Apps{resource_set: resource_set}),
+      do: ResourceSet.to_wire(resource_set)
+
+    def from_body(_, %{"apps" => apps}, _) do
+      %Apps{
+        resource_set: ResourceSet.from_wire("apps", apps)
+      }
+    end
+  end
+end
+
 defmodule Macfly.Caveat.ValidityWindow do
   alias __MODULE__
 
