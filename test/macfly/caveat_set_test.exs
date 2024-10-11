@@ -3,16 +3,16 @@ defmodule Macfly.CaveatSetTest do
 
   alias Macfly.CaveatSet
 
-  @vectors JSON.decode!(File.read!("test/vectors.json"))
+  @vectors Jason.decode!(File.read!("test/vectors.json"))
 
   for cav <- [
-    Macfly.Caveat.ConfineUser,
-    Macfly.Caveat.ConfineOrganization,
-    Macfly.Caveat.BindToParentToken,
-    Macfly.Caveat.ConfineGoogleHD,
-    Macfly.Caveat.ConfineGitHubOrg,
-  ] do
-    name = to_string(cav) |> String.split(".") |> List.last
+        Macfly.Caveat.ConfineUser,
+        Macfly.Caveat.ConfineOrganization,
+        Macfly.Caveat.BindToParentToken,
+        Macfly.Caveat.ConfineGoogleHD,
+        Macfly.Caveat.ConfineGitHubOrg
+      ] do
+    name = to_string(cav) |> String.split(".") |> List.last()
 
     test "round trip #{name}" do
       %{"caveats" => %{unquote(name) => b64}} = @vectors

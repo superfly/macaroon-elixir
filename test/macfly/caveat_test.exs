@@ -64,7 +64,7 @@ defmodule Macfly.CaveatTest do
          "location" => location,
          "with_tps" => header,
          "tp_key" => tp_key
-       }} = JSON.decode(data)
+       }} = Jason.decode(data)
 
       tp_key = Base.decode64!(tp_key)
 

@@ -80,7 +80,7 @@ defmodule Macfly.Discharge do
     t
     |> Base.encode64()
     |> then(&%{ticket: &1})
-    |> JSON.encode!()
+    |> Jason.encode!()
     |> then(&HTTP.post(url, &1, h))
     |> handle_init_response(d)
 
@@ -98,7 +98,7 @@ defmodule Macfly.Discharge do
   end
 
   defp handle_init_response({:ok, %HTTPoison.Response{status_code: status, body: body}}, d) do
-    case JSON.decode(body) do
+    case Jason.decode(body) do
       {:ok, %{"discharge" => discharge}} ->
         %Discharge{d | state: {:success, discharge}}
 
@@ -126,7 +126,7 @@ defmodule Macfly.Discharge do
     do: %Discharge{d | state: {:error, :failed, e}}
 
   defp handle_poll_response({:ok, %HTTPoison.Response{status_code: status, body: body}}, d) do
-    case JSON.decode(body) do
+    case Jason.decode(body) do
       {:ok, %{"discharge" => discharge}} ->
         %Discharge{d | state: {:success, discharge}}
 
