@@ -85,7 +85,9 @@ defmodule Macfly.Action do
 
   defimpl Jason.Encoder, for: Action do
     def encode(%Action{} = action, opts) do
-      Jason.Encode.string(Macfly.Action.to_human(action), opts)
+      action
+      |> Macfly.Action.to_human()
+      |> Jason.Encode.string(opts)
     end
   end
 
