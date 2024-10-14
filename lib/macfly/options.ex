@@ -1,9 +1,12 @@
 defmodule Macfly.Options do
   alias __MODULE__
   alias Macfly.Caveat
+  alias Macfly.Caveats
 
   @caveat_modules [
     Caveat.Organization,
+    Caveats.Apps,
+    Caveats.FeatureSet,
     Caveat.ConfineUser,
     Caveat.ConfineOrganization,
     Caveat.ValidityWindow,

@@ -17,7 +17,7 @@ defmodule MacflyTest do
     {:ok, data} = File.read("test/vectors.json")
 
     {:ok, %{"location" => location, "attenuation" => baseHeaderToAttenuations}} =
-      JSON.decode(data)
+      Jason.decode(data)
 
     o = Macfly.Options.with_caveats(%Macfly.Options{location: location}, @test_caveats)
 
@@ -38,7 +38,7 @@ defmodule MacflyTest do
 
   test "encode/decode" do
     {:ok, data} = File.read("test/vectors.json")
-    {:ok, %{"macaroons" => headers}} = JSON.decode(data)
+    {:ok, %{"macaroons" => headers}} = Jason.decode(data)
 
     for {_, header} <- headers do
       {:ok, macaroons} = Macfly.decode(header)
@@ -50,7 +50,7 @@ defmodule MacflyTest do
     o = Macfly.Options.with_caveats(@test_caveats)
 
     {:ok, data} = File.read("test/vectors.json")
-    {:ok, %{"macaroons" => headers}} = JSON.decode(data)
+    {:ok, %{"macaroons" => headers}} = Jason.decode(data)
 
     for {name, header} <- headers do
       {:ok, macaroons} = Macfly.decode(header, o)
@@ -146,7 +146,7 @@ defmodule MacflyTest do
     {:ok, data} = File.read("test/vectors.json")
 
     {:ok, %{"location" => location, "with_tps" => header}} =
-      JSON.decode(data)
+      Jason.decode(data)
 
     o = %Macfly.Options{location: location}
     {:ok, macaroons} = Macfly.decode(header)

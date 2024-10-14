@@ -2,7 +2,7 @@ defmodule Macfly.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/superfly/macaroon-elixir"
-  @version "0.2.16"
+  @version "0.2.17"
 
   def project do
     [
@@ -30,7 +30,8 @@ defmodule Macfly.MixProject do
     [
       {:msgpax, "~> 2.3"},
       {:httpoison, "~> 1.8"},
-      {:json, "~> 1.4"},
+      {:jason, "~> 1.4"},
+      {:elixir_uuid, "~> 1.2"},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
   end
