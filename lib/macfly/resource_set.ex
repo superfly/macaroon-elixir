@@ -1,67 +1,110 @@
 defmodule Macfly.ResourceSet do
-  alias Macfly.Action
+  defmacro define_resource_set_caveat_module(
+             module_name,
+             resources_key,
+             caveat_type,
+             allowed_resources \\ :undefined
+           ) do
+    quote do
+      defmodule unquote(module_name) do
+        alias Macfly.Action
+        alias __MODULE__
 
-  @enforce_keys [:resource_name, :resources]
-  defstruct [:resource_name, :resources]
-  # ty should be one of String.t(), integer() or atom().
-  @type resources(ty) :: %{ty => Action.t()}
-  @type t(ty) :: %__MODULE__{resources: resources(ty)}
+        @enforce_keys [unquote(resources_key)]
+        defstruct [unquote(resources_key)]
 
-  @spec from_wire(String.t(), %{any() => integer()}, allowed_resources: list()) ::
-          {:ok, t(any())} | {:error, String.t()}
-  def from_wire(resource_name, resources, opts \\ []) do
-    allowed_resources = Keyword.get(opts, :allowed_resources, nil)
-
-    Enum.reduce_while(resources, %{}, fn {resource, encoded_action}, accum ->
-      with {:ok, action} <- Action.from_wire(encoded_action) do
-        case allowed_resources do
-          nil ->
-            {:cont, Map.put(accum, resource, action)}
-
-          _ ->
-            # Resources can be strings, integers or atoms. As such, converting everything
-            # to strings as a canonical form is valid, since to_string/1 is injective for
-            # all three types.
-            case Enum.find(allowed_resources, :no_match, &(to_string(resource) == to_string(&1))) do
-              :no_match -> {:halt, {:error, "resource not allowed: #{inspect(resource)}"}}
-              allowed -> {:cont, Map.put(accum, allowed, action)}
-            end
+        defimpl Jason.Encoder, for: unquote(module_name) do
+          def encode(%unquote(module_name){unquote(resources_key) => resources}, opts) do
+            Jason.Encode.map(
+              %{
+                type: unquote(caveat_type),
+                body: %{unquote(resources_key) => resources}
+              },
+              opts
+            )
+          end
         end
-      else
-        {:error, _} = err -> {:halt, err}
-        _err -> {:halt, {:error, "failed to decode action"}}
+
+        @type t() :: %__MODULE__{
+                unquote(resources_key) => %{(String.t() | integer() | atom()) => Action.t()}
+              }
+
+        def build!(resources) do
+          resources =
+            case unquote(allowed_resources) do
+              :undefined ->
+                resources
+
+              _ ->
+                # Resources can be strings, integers or atoms. As such, converting everything
+                # to strings as a canonical form is valid, since to_string/1 is injective for
+                # all three types.
+                Enum.reduce(resources, %{}, fn {resource, action}, accum ->
+                  case Enum.find(
+                         unquote(allowed_resources),
+                         :no_match,
+                         &(to_string(resource) == to_string(&1))
+                       ) do
+                    :no_match -> raise "resource not allowed: #{inspect(resource)}"
+                    allowed -> Map.put(accum, allowed, action)
+                  end
+                end)
+            end
+
+          %__MODULE__{unquote(resources_key) => resources}
+        end
+
+        defimpl Macfly.Caveat do
+          # Defining this here because we need a compile time
+          # atom in order to be able to construct structs in code below.
+          @parent_module unquote(module_name)
+
+          def type(_), do: unquote(caveat_type)
+
+          def body(%@parent_module{unquote(resources_key) => resources}) do
+            %{unquote(resources_key) => resources}
+          end
+
+          def from_body(_, %{unquote(to_string(resources_key)) => resources}, _) do
+            Enum.reduce_while(resources, %{}, fn {resource, encoded_action}, accum ->
+              with {:ok, action} <- Action.from_wire(encoded_action) do
+                case unquote(allowed_resources) do
+                  :undefined ->
+                    {:cont, Map.put(accum, resource, action)}
+
+                  _ ->
+                    # Resources can be strings, integers or atoms. As such, converting everything
+                    # to strings as a canonical form is valid, since to_string/1 is injective for
+                    # all three types.
+                    case Enum.find(
+                           unquote(allowed_resources),
+                           :no_match,
+                           &(to_string(resource) == to_string(&1))
+                         ) do
+                      :no_match -> {:halt, {:error, "resource not allowed: #{inspect(resource)}"}}
+                      allowed -> {:cont, Map.put(accum, allowed, action)}
+                    end
+                end
+              else
+                {:error, _} = err -> {:halt, err}
+                _err -> {:halt, {:error, "failed to decode action"}}
+              end
+            end)
+            |> case do
+              %{} = acc ->
+                {:ok, %@parent_module{unquote(resources_key) => acc}}
+
+              {:error, _} = err ->
+                err
+
+              _ ->
+                {:error, "failed to decode resource set"}
+            end
+          end
+        end
+
+        def from_body(_, _, _), do: {:error, "bad Apps format"}
       end
-    end)
-    |> case do
-      %{} = acc -> {:ok, %__MODULE__{resource_name: resource_name, resources: acc}}
-      {:error, _} = err -> err
-      _ -> {:error, "failed to decode resource set"}
     end
-  end
-
-  @doc """
-  Helper method to avoid boilerplate for caveats that are simple `ResourceSet` wrappers.
-  """
-  @spec from_wire_struct(atom(), String.t(), %{any() => integer()}) ::
-          {:ok, t(any())} | {:error, String.t()}
-  def from_wire_struct(struct_name, resource_name, resources, opts \\ []) do
-    with {:ok, %__MODULE__{} = resource_set} <-
-           from_wire(resource_name, resources, opts) do
-      {:ok, struct!(struct_name, resource_set: resource_set)}
-    end
-  end
-
-  @spec to_wire(t(any()) | %{resource_set: t(any())}) :: map()
-  def to_wire(x)
-
-  def to_wire(%__MODULE__{resource_name: resource_name, resources: resources}) do
-    Map.put(%{}, resource_name, resources)
-  end
-
-  @doc """
-  Helper method to avoid boilerplate for caveats that are simple `ResourceSet` wrappers.
-  """
-  def to_wire(%{resource_set: resource_set}) do
-    to_wire(resource_set)
   end
 end

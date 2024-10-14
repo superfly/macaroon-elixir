@@ -1,7 +1,6 @@
 defmodule Macfly.CaveatTest do
   use ExUnit.Case
 
-  alias Macfly.ResourceSet
   alias Macfly.Action
 
   alias Macfly.Caveat.{
@@ -13,39 +12,116 @@ defmodule Macfly.CaveatTest do
     ConfineGoogleHD,
     ConfineGitHubOrg,
     UnrecognizedCaveat,
-    IfPresent,
+    IfPresent
+  }
+
+  alias Macfly.Caveats.{
     Apps,
     FeatureSet
   }
 
   test "ValidityWindow", do: round_trip(%ValidityWindow{not_before: 1, not_after: 2})
+
+  test "encode ValidityWindow" do
+    assert %{"type" => 4, "body" => %{"not_before" => 1, "not_after" => 2}} =
+             json_round_trip(%ValidityWindow{not_before: 1, not_after: 2})
+  end
+
   test "ConfineUser", do: round_trip(%ConfineUser{id: 1})
+
+  test "encode ConfineUser" do
+    assert %{"type" => 8, "body" => %{"id" => 1}} = json_round_trip(%ConfineUser{id: 1})
+  end
+
   test "ConfineOrganization", do: round_trip(%ConfineOrganization{id: 1})
+
+  test "encode ConfineOrganization" do
+    assert %{"type" => 9, "body" => %{"id" => 1}} = json_round_trip(%ConfineOrganization{id: 1})
+  end
+
   test "ThirdParty", do: round_trip(%ThirdParty{location: "a", ticket: "b", verifier_key: "c"})
+
+  test "encode ThirdParty" do
+    assert %{"type" => 11, "body" => %{"location" => "a", "ticket" => "b", "verifier_key" => "c"}} =
+             json_round_trip(%ThirdParty{location: "a", ticket: "b", verifier_key: "c"})
+  end
+
   test "BindToParentToken", do: round_trip(%BindToParentToken{binding_id: "a"})
+
+  test "encode BindToParentToken" do
+    assert %{"type" => 12, "body" => %{"binding_id" => "a"}} =
+             json_round_trip(%BindToParentToken{binding_id: "a"})
+  end
+
   test "IfPresent", do: round_trip(%IfPresent{ifs: [%ConfineUser{id: 1}], else: 1})
+
+  test "encode IfPresent" do
+    assert %{
+             "type" => 13,
+             "body" => %{"else" => "r", "ifs" => [%{"type" => 8, "body" => %{"id" => 1}}]}
+           } =
+             json_round_trip(%IfPresent{ifs: [%ConfineUser{id: 1}], else: Action.read()})
+  end
+
   test "ConfineGoogleHD", do: round_trip(%ConfineGoogleHD{hd: "a"})
+
+  test "encode ConfineGoogleHD" do
+    assert %{"type" => 19, "body" => %{"hd" => "a"}} = json_round_trip(%ConfineGoogleHD{hd: "a"})
+  end
+
   test "ConfineGitHubOrg", do: round_trip(%ConfineGitHubOrg{id: 1})
+
+  test "encode ConfineGitHubOrg" do
+    assert %{"type" => 20, "body" => %{"id" => 1}} = json_round_trip(%ConfineGitHubOrg{id: 1})
+  end
+
   test "UnrecognizedCaveat", do: round_trip(%UnrecognizedCaveat{type: 9999, body: 1})
-  test "Apps", do: round_trip(Apps.build(%{"1234" => Action.read(), "5678" => Action.control()}))
+
+  test "encode UnrecognizedCaveat" do
+    assert %{"type" => 9999, "body" => 1} =
+             json_round_trip(%UnrecognizedCaveat{type: 9999, body: 1})
+  end
+
+  test "Apps", do: round_trip(Apps.build!(%{"1234" => Action.read(), "5678" => Action.control()}))
+
+  test "encode Apps" do
+    assert %{
+             "type" => 3,
+             "body" => %{
+               "apps" => %{
+                 "1234" => "r",
+                 "5678" => "C"
+               }
+             }
+           } =
+             json_round_trip(Apps.build!(%{"1234" => Action.read(), "5678" => Action.control()}))
+  end
 
   test "FeatureSet",
     do: round_trip(FeatureSet.build!(%{wg: Action.read(), builder: Action.all()}))
 
+  test "encode FeatureSet" do
+    assert %{
+             "type" => 5,
+             "body" => %{
+               "features" => %{
+                 "wg" => "r",
+                 "builder" => "rwcdC"
+               }
+             }
+           } =
+             json_round_trip(FeatureSet.build!(%{wg: Action.read(), builder: Action.all()}))
+  end
+
   test "cannot build FeatureSet with invalid features" do
-    assert_raise RuntimeError, "invalid features", fn ->
+    assert_raise RuntimeError, "resource not allowed: :random_feature", fn ->
       FeatureSet.build!(%{random_feature: Action.read()})
     end
   end
 
   test "cannot decode FeatureSet with invalid features" do
     # manually construct the caveat because the build!/1 function would raise
-    cav = %FeatureSet{
-      resource_set: %ResourceSet{
-        resource_name: "features",
-        resources: %{random_feature: Action.read()}
-      }
-    }
+    cav = %FeatureSet{features: %{random_feature: Action.read()}}
 
     assert {:error, ~s(resource not allowed: "random_feature")} =
              Macfly.Macaroon.new("foo", "bar", "baz", [cav])
@@ -107,5 +183,12 @@ defmodule Macfly.CaveatTest do
              Macfly.Macaroon.new("foo", "bar", "baz", [cav])
              |> to_string()
              |> Macfly.Macaroon.decode()
+  end
+
+  def json_round_trip(cav) do
+    with {:ok, encoded} <- Jason.encode(cav),
+         {:ok, decoded} <- Jason.decode(encoded) do
+      decoded
+    end
   end
 end

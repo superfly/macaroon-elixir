@@ -83,6 +83,12 @@ defmodule Macfly.Action do
     i
   end
 
+  defimpl Jason.Encoder, for: Action do
+    def encode(%Action{} = action, opts) do
+      Jason.Encode.string(Macfly.Action.to_human(action), opts)
+    end
+  end
+
   defimpl Msgpax.Packer, for: Action do
     def pack(%Action{} = action) do
       Macfly.Action.to_wire(action)

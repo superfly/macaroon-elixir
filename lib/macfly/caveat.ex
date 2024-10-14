@@ -9,6 +9,24 @@ defprotocol Macfly.Caveat do
   def from_body(v, body, o)
 end
 
+defmodule Macfly.Caveat.JSON do
+  defmacro defimpl_jason_encoder(module_name) do
+    quote do
+      defimpl Jason.Encoder, for: unquote(module_name) do
+        def encode(value, opts) do
+          Jason.Encode.map(
+            %{
+              type: Macfly.Caveat.type(value),
+              body: Map.drop(value, [:__struct__])
+            },
+            opts
+          )
+        end
+      end
+    end
+  end
+end
+
 defmodule Macfly.Caveat.Organization do
   alias __MODULE__
   alias Macfly.Action
@@ -31,122 +49,9 @@ defmodule Macfly.Caveat.Organization do
 
     def from_body(_, _, _), do: {:error, "bad Organization format"}
   end
-end
 
-defmodule Macfly.Caveat.Apps do
-  alias Macfly.ResourceSet
-  alias __MODULE__
-
-  @enforce_keys [:resource_set]
-  defstruct [:resource_set]
-  @type app_id :: String.t()
-  @type t() :: %__MODULE__{resource_set: ResourceSet.t(app_id())}
-
-  @resource_name "apps"
-
-  @doc """
-  Use this method to construct an `Apps` caveat.
-  This is to ensure the `resource_name` is set to `"apps"`,
-  since we match on that string when decoding this caveat.
-  """
-  @spec build(ResourceSet.resources(app_id())) :: t()
-  def build(apps),
-    do: %__MODULE__{
-      resource_set: %ResourceSet{resource_name: @resource_name, resources: apps}
-    }
-
-  defimpl Macfly.Caveat do
-    alias Macfly.ResourceSet
-
-    @resource_name "apps"
-
-    def type(_), do: 3
-
-    def body(%Apps{} = caveat),
-      do: ResourceSet.to_wire(caveat)
-
-    def from_body(_, %{@resource_name => apps}, _) do
-      ResourceSet.from_wire_struct(Apps, @resource_name, apps)
-    end
-
-    def from_body(_, _, _), do: {:error, "bad Apps format"}
-  end
-end
-
-defmodule Macfly.Caveat.FeatureSet do
-  alias Macfly.ResourceSet
-  alias __MODULE__
-
-  @enforce_keys [:resource_set]
-  defstruct [:resource_set]
-
-  def features(), do: ~w(wg
-  domain
-  site
-  builder
-  addon
-  checks
-  membership
-  billing
-  "litefs-cloud"
-  deletion
-  document_signing
-  authentication)a
-
-  @type features ::
-          :wg
-          | :domain
-          | :site
-          | :builder
-          | :addon
-          | :checks
-          | :membership
-          | :billing
-          | :"litefs-cloud"
-          | :deletion
-          | :document_signing
-          | :authentication
-  @type t() :: %__MODULE__{resource_set: ResourceSet.t(features())}
-
-  @resource_name "features"
-
-  @doc """
-  Use this method to construct a `FeatureSet` caveat.
-  This is to ensure the `resource_name` is set to `"features"`,
-  since we match on that string when decoding this caveat.
-  This method also ensures that the features provided are valid,
-  raising if there are any unexpected features.
-  """
-  @spec build!(ResourceSet.resources(features())) :: t()
-  def build!(features) do
-    if Map.keys(features)
-       |> Enum.any?(fn feature -> !Enum.member?(features(), feature) end) do
-      raise "invalid features"
-    end
-
-    %__MODULE__{
-      resource_set: %ResourceSet{resource_name: @resource_name, resources: features}
-    }
-  end
-
-  defimpl Macfly.Caveat do
-    alias Macfly.ResourceSet
-
-    @resource_name "features"
-
-    def type(_), do: 5
-
-    def body(%FeatureSet{} = caveat),
-      do: ResourceSet.to_wire(caveat)
-
-    def from_body(_, %{@resource_name => apps}, _) do
-      ResourceSet.from_wire_struct(FeatureSet, @resource_name, apps,
-        allowed_resources: FeatureSet.features()
-      )
-    end
-
-    def from_body(_, _, _), do: {:error, "bad FeatureSet format"}
-  end
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ValidityWindow do
@@ -177,6 +82,9 @@ defmodule Macfly.Caveat.ValidityWindow do
 
     def from_body(_, _, _), do: {:error, "bad ValidityWindow format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ConfineUser do
@@ -197,6 +105,9 @@ defmodule Macfly.Caveat.ConfineUser do
 
     def from_body(_, _, _), do: {:error, "bad ConfineUser format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ConfineOrganization do
@@ -217,6 +128,9 @@ defmodule Macfly.Caveat.ConfineOrganization do
 
     def from_body(_, _, _), do: {:error, "bad ConfineOrganization format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ThirdParty do
@@ -302,6 +216,9 @@ defmodule Macfly.Caveat.ThirdParty do
 
     def from_body(_, _, _), do: {:error, "bad ThirdParty format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.BindToParentToken do
@@ -324,6 +241,9 @@ defmodule Macfly.Caveat.BindToParentToken do
 
     def from_body(_, _, _), do: {:error, "bad BindToParentToken format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.IfPresent do
@@ -348,6 +268,9 @@ defmodule Macfly.Caveat.IfPresent do
       end
     end
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ConfineGoogleHD do
@@ -368,6 +291,9 @@ defmodule Macfly.Caveat.ConfineGoogleHD do
 
     def from_body(_, _, _), do: {:error, "bad ConfineGoogleHD format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ConfineGitHubOrg do
@@ -388,6 +314,9 @@ defmodule Macfly.Caveat.ConfineGitHubOrg do
 
     def from_body(_, _, _), do: {:error, "bad ConfineGitHubOrg format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.NoAdminFeatures do
@@ -407,6 +336,9 @@ defmodule Macfly.Caveat.NoAdminFeatures do
 
     def from_body(_, _, _), do: {:error, "bad NoAdminFeatures format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.FlyioUserID do
@@ -427,6 +359,9 @@ defmodule Macfly.Caveat.FlyioUserID do
 
     def from_body(_, _, _), do: {:error, "bad FlyioUserID format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.GitHubUserID do
@@ -447,6 +382,9 @@ defmodule Macfly.Caveat.GitHubUserID do
 
     def from_body(_, _, _), do: {:error, "bad GitHubUserID format"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.GoogleUserID do
@@ -471,11 +409,15 @@ defmodule Macfly.Caveat.GoogleUserID do
 
     def from_body(_, body, _), do: {:error, "bad GoogleUserID format #{inspect(body)}"}
   end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.UnrecognizedCaveat do
   alias __MODULE__
 
+  @derive Jason.Encoder
   @enforce_keys [:type, :body]
   defstruct [:type, :body]
   @type t() :: %UnrecognizedCaveat{type: integer(), body: any()}
@@ -488,4 +430,17 @@ defmodule Macfly.Caveat.UnrecognizedCaveat do
       {:ok, %UnrecognizedCaveat{type: type, body: body}}
     end
   end
+end
+
+defmodule Macfly.Caveats do
+  require Macfly.ResourceSet
+
+  Macfly.ResourceSet.define_resource_set_caveat_module(Apps, :apps, 3)
+
+  Macfly.ResourceSet.define_resource_set_caveat_module(
+    FeatureSet,
+    :features,
+    5,
+    ~w(wg domain site builder addon checks membership billing "litefs-cloud" deletion document_signing authentication)a
+  )
 end
