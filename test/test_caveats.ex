@@ -6,6 +6,7 @@ defmodule TestCaveats.StringCaveat do
   defstruct [:value]
 
   defimpl Macfly.Caveat do
+    def name(_), do: "StringCaveat"
     def type(_), do: 281_474_976_710_656
 
     def body(%StringCaveat{value: value}) do
@@ -26,6 +27,7 @@ defmodule TestCaveats.Int64Caveat do
   defstruct [:value]
 
   defimpl Macfly.Caveat do
+    def name(_), do: "Int64Caveat"
     def type(_), do: 281_474_976_710_657
 
     def body(%Int64Caveat{value: value}) do
@@ -46,6 +48,7 @@ defmodule TestCaveats.Uint64Caveat do
   defstruct [:value]
 
   defimpl Macfly.Caveat do
+    def name(_), do: "Uint64Caveat"
     def type(_), do: 281_474_976_710_658
 
     def body(%Uint64Caveat{value: value}) do
@@ -66,6 +69,7 @@ defmodule TestCaveats.SliceCaveat do
   defstruct [:value]
 
   defimpl Macfly.Caveat do
+    def name(_), do: "SliceCaveat"
     def type(_), do: 281_474_976_710_659
 
     def body(%SliceCaveat{value: value}) do
@@ -86,6 +90,7 @@ defmodule TestCaveats.MapCaveat do
   defstruct [:value]
 
   defimpl Macfly.Caveat do
+    def name(_), do: "MapCaveat"
     def type(_), do: 281_474_976_710_660
 
     def body(%MapCaveat{value: value}) do
@@ -106,6 +111,7 @@ defmodule TestCaveats.IntResourceSetCaveat do
   defstruct [:value]
 
   defimpl Macfly.Caveat do
+    def name(_), do: "IntResourceSetCaveat"
     def type(_), do: 281_474_976_710_661
 
     def body(%IntResourceSetCaveat{value: value}) do
@@ -126,6 +132,7 @@ defmodule TestCaveats.StringResourceSetCaveat do
   defstruct [:value]
 
   defimpl Macfly.Caveat do
+    def name(_), do: "StringResourceSetCaveat"
     def type(_), do: 281_474_976_710_662
 
     def body(%StringResourceSetCaveat{value: value}) do
@@ -146,6 +153,7 @@ defmodule TestCaveats.PrefixResourceSetCaveat do
   defstruct [:value]
 
   defimpl Macfly.Caveat do
+    def name(_), do: "PrefixResourceSetCaveat"
     def type(_), do: 281_474_976_710_663
 
     def body(%PrefixResourceSetCaveat{value: value}) do

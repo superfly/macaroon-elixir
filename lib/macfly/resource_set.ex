@@ -14,10 +14,10 @@ defmodule Macfly.ResourceSet do
         defstruct [unquote(resources_key)]
 
         defimpl Jason.Encoder, for: unquote(module_name) do
-          def encode(%unquote(module_name){unquote(resources_key) => resources}, opts) do
+          def encode(%unquote(module_name){unquote(resources_key) => resources} = value, opts) do
             Jason.Encode.map(
               %{
-                type: unquote(caveat_type),
+                type: Macfly.Caveat.name(value),
                 body: %{unquote(resources_key) => resources}
               },
               opts
@@ -59,13 +59,14 @@ defmodule Macfly.ResourceSet do
           # atom in order to be able to construct structs in code below.
           @parent_module unquote(module_name)
 
+          def name(_), do: unquote(module_name) |> Module.split() |> Enum.at(-1)
           def type(_), do: unquote(caveat_type)
 
           def body(%@parent_module{unquote(resources_key) => resources}) do
-            %{unquote(resources_key) => resources}
+            [resources]
           end
 
-          def from_body(_, %{unquote(to_string(resources_key)) => resources}, _) do
+          def from_body(_, [%{} = resources], _) do
             Enum.reduce_while(resources, %{}, fn {resource, encoded_action}, accum ->
               with {:ok, action} <- Action.from_wire(encoded_action) do
                 case unquote(allowed_resources) do
@@ -103,7 +104,7 @@ defmodule Macfly.ResourceSet do
           end
         end
 
-        def from_body(_, _, _), do: {:error, "bad Apps format"}
+        def from_body(t, _, _), do: {:error, "bad #{Macfly.Caveat.name(t)} format"}
       end
     end
   end

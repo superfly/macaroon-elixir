@@ -84,6 +84,7 @@ defmodule Macfly.Macaroon do
   def encode(%Macaroon{} = m), do: to_string(m)
 
   def from_wire(wire_macaroon, options \\ %Options{})
+
   def from_wire([nonce, location, caveats, %Msgpax.Bin{data: tail}], %Options{} = o) do
     with {:ok, nonce} <- Nonce.from_wire(nonce),
          {:ok, caveats} <- CaveatSet.from_wire(caveats, o) do

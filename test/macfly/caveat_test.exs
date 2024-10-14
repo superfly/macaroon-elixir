@@ -23,33 +23,38 @@ defmodule Macfly.CaveatTest do
   test "ValidityWindow", do: round_trip(%ValidityWindow{not_before: 1, not_after: 2})
 
   test "encode ValidityWindow" do
-    assert %{"type" => 4, "body" => %{"not_before" => 1, "not_after" => 2}} =
+    assert %{"type" => "ValidityWindow", "body" => %{"not_before" => 1, "not_after" => 2}} =
              json_round_trip(%ValidityWindow{not_before: 1, not_after: 2})
   end
 
   test "ConfineUser", do: round_trip(%ConfineUser{id: 1})
 
   test "encode ConfineUser" do
-    assert %{"type" => 8, "body" => %{"id" => 1}} = json_round_trip(%ConfineUser{id: 1})
+    assert %{"type" => "ConfineUser", "body" => %{"id" => 1}} =
+             json_round_trip(%ConfineUser{id: 1})
   end
 
   test "ConfineOrganization", do: round_trip(%ConfineOrganization{id: 1})
 
   test "encode ConfineOrganization" do
-    assert %{"type" => 9, "body" => %{"id" => 1}} = json_round_trip(%ConfineOrganization{id: 1})
+    assert %{"type" => "ConfineOrganization", "body" => %{"id" => 1}} =
+             json_round_trip(%ConfineOrganization{id: 1})
   end
 
   test "ThirdParty", do: round_trip(%ThirdParty{location: "a", ticket: "b", verifier_key: "c"})
 
   test "encode ThirdParty" do
-    assert %{"type" => 11, "body" => %{"location" => "a", "ticket" => "b", "verifier_key" => "c"}} =
+    assert %{
+             "type" => "3P",
+             "body" => %{"Location" => "a", "Ticket" => "b", "VerifierKey" => "c"}
+           } =
              json_round_trip(%ThirdParty{location: "a", ticket: "b", verifier_key: "c"})
   end
 
   test "BindToParentToken", do: round_trip(%BindToParentToken{binding_id: "a"})
 
   test "encode BindToParentToken" do
-    assert %{"type" => 12, "body" => %{"binding_id" => "a"}} =
+    assert %{"type" => "BindToParentToken", "body" => %{"binding_id" => "a"}} =
              json_round_trip(%BindToParentToken{binding_id: "a"})
   end
 
@@ -57,8 +62,11 @@ defmodule Macfly.CaveatTest do
 
   test "encode IfPresent" do
     assert %{
-             "type" => 13,
-             "body" => %{"else" => "r", "ifs" => [%{"type" => 8, "body" => %{"id" => 1}}]}
+             "type" => "IfPresent",
+             "body" => %{
+               "else" => "r",
+               "ifs" => [%{"type" => "ConfineUser", "body" => %{"id" => 1}}]
+             }
            } =
              json_round_trip(%IfPresent{ifs: [%ConfineUser{id: 1}], else: Action.read()})
   end
@@ -66,19 +74,21 @@ defmodule Macfly.CaveatTest do
   test "ConfineGoogleHD", do: round_trip(%ConfineGoogleHD{hd: "a"})
 
   test "encode ConfineGoogleHD" do
-    assert %{"type" => 19, "body" => %{"hd" => "a"}} = json_round_trip(%ConfineGoogleHD{hd: "a"})
+    assert %{"type" => "ConfineGoogleHD", "body" => %{"hd" => "a"}} =
+             json_round_trip(%ConfineGoogleHD{hd: "a"})
   end
 
   test "ConfineGitHubOrg", do: round_trip(%ConfineGitHubOrg{id: 1})
 
   test "encode ConfineGitHubOrg" do
-    assert %{"type" => 20, "body" => %{"id" => 1}} = json_round_trip(%ConfineGitHubOrg{id: 1})
+    assert %{"type" => "ConfineGitHubOrg", "body" => %{"id" => 1}} =
+             json_round_trip(%ConfineGitHubOrg{id: 1})
   end
 
   test "UnrecognizedCaveat", do: round_trip(%UnrecognizedCaveat{type: 9999, body: 1})
 
   test "encode UnrecognizedCaveat" do
-    assert %{"type" => 9999, "body" => 1} =
+    assert %{"type" => "Unregistered", "body" => 1} =
              json_round_trip(%UnrecognizedCaveat{type: 9999, body: 1})
   end
 
@@ -86,7 +96,7 @@ defmodule Macfly.CaveatTest do
 
   test "encode Apps" do
     assert %{
-             "type" => 3,
+             "type" => "Apps",
              "body" => %{
                "apps" => %{
                  "1234" => "r",
@@ -102,7 +112,7 @@ defmodule Macfly.CaveatTest do
 
   test "encode FeatureSet" do
     assert %{
-             "type" => 5,
+             "type" => "FeatureSet",
              "body" => %{
                "features" => %{
                  "wg" => "r",
