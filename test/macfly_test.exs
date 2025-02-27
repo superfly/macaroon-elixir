@@ -119,8 +119,8 @@ defmodule MacflyTest do
           assert %Macfly.Caveat.BindToParentToken{binding_id: <<1, 2, 3>>} ==
                    hd(hd(macaroons).caveats)
 
-        "NoAdminFeatures" ->
-          assert %Macfly.Caveat.NoAdminFeatures{} == hd(hd(macaroons).caveats)
+        "IsMember" ->
+          assert %Macfly.Caveat.IsMember{} == hd(hd(macaroons).caveats)
 
         "FlyioUserID" ->
           assert %Macfly.Caveat.FlyioUserID{id: 123} == hd(hd(macaroons).caveats)
@@ -130,6 +130,10 @@ defmodule MacflyTest do
 
         "GoogleUserID" ->
           assert %Macfly.Caveat.GoogleUserID{id: 0xDEADBEEF_DEADBEEF_7B} ==
+                   hd(hd(macaroons).caveats)
+
+        "Mutations" ->
+          assert %Macfly.Caveat.Mutations{mutations: ["foo"]} ==
                    hd(hd(macaroons).caveats)
       end
 
