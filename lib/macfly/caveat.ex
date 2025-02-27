@@ -92,6 +92,30 @@ defmodule Macfly.Caveat.ValidityWindow do
   Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
+defmodule Macfly.Caveat.Mutations do
+  alias __MODULE__
+
+  @enforce_keys [:mutations]
+  defstruct [:mutations]
+  @type t() :: %Mutations{mutations: list(String.t())}
+
+  defimpl Macfly.Caveat do
+    def name(_), do: "Mutations"
+    def type(_), do: 6
+
+    def body(%Mutations{mutations: m}), do: [m]
+
+    def from_body(_, [m], _) when is_list(m) do
+      {:ok, %Mutations{mutations: m}}
+    end
+
+    def from_body(_, body, _), do: {:error, "bad Mutations format", body}
+  end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+end
+
 defmodule Macfly.Caveat.ConfineUser do
   alias __MODULE__
 
@@ -347,6 +371,30 @@ defmodule Macfly.Caveat.ConfineGitHubOrg do
   Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
+defmodule Macfly.Caveat.IsMember do
+  alias __MODULE__
+
+  defstruct []
+  @type t() :: %IsMember{}
+
+  defimpl Macfly.Caveat do
+    def name(_), do: "IsMember"
+    def type(_), do: 22
+
+    def body(%IsMember{}), do: []
+
+    def from_body(_, [], _) do
+      {:ok, %IsMember{}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad IsMember format"}
+  end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+end
+
+# NoAdminFeatures was renamed to IsMember
 defmodule Macfly.Caveat.NoAdminFeatures do
   alias __MODULE__
 
@@ -354,16 +402,16 @@ defmodule Macfly.Caveat.NoAdminFeatures do
   @type t() :: %NoAdminFeatures{}
 
   defimpl Macfly.Caveat do
-    def name(_), do: "NoAdminFeatures"
+    def name(_), do: "IsMember"
     def type(_), do: 22
 
     def body(%NoAdminFeatures{}), do: []
 
     def from_body(_, [], _) do
-      {:ok, %NoAdminFeatures{}}
+      {:ok, %Macfly.Caveat.IsMember{}}
     end
 
-    def from_body(_, _, _), do: {:error, "bad NoAdminFeatures format"}
+    def from_body(_, _, _), do: {:error, "bad IsMember format"}
   end
 
   require Macfly.Caveat.JSON

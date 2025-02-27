@@ -12,13 +12,37 @@ defmodule Macfly.CaveatTest do
     ConfineGoogleHD,
     ConfineGitHubOrg,
     UnrecognizedCaveat,
-    IfPresent
+    IfPresent,
+    Mutations,
+    IsMember,
+    NoAdminFeatures
   }
 
   alias Macfly.Caveats.{
     Apps,
     FeatureSet
   }
+
+  test "IsMember", do: round_trip(%IsMember{})
+
+  test "encode IsMember" do
+    assert %{"type" => "IsMember", "body" => %{}} =
+             json_round_trip(%IsMember{})
+  end
+
+  test "NoAdminFeatures (rename IsMember)" do
+    {:ok, %Macfly.Macaroon{caveats: [decoded]}} =
+      Macfly.Macaroon.new("foo", "bar", "baz", [%NoAdminFeatures{}])
+      |> to_string()
+      |> Macfly.Macaroon.decode()
+
+    assert %IsMember{} = decoded
+  end
+
+  test "encode NoAdminFeatures (renamed IsMember)" do
+    assert %{"type" => "IsMember", "body" => %{}} =
+             json_round_trip(%NoAdminFeatures{})
+  end
 
   test "ValidityWindow", do: round_trip(%ValidityWindow{not_before: 1, not_after: 2})
 
@@ -121,6 +145,19 @@ defmodule Macfly.CaveatTest do
              }
            } =
              json_round_trip(FeatureSet.build!(%{wg: Action.read(), builder: Action.all()}))
+  end
+
+  test "Mutations", do: round_trip(%Mutations{mutations: ["foo"]})
+
+  test "encode Mutations" do
+    assert %{
+             "type" => "Mutations",
+             "body" => %{
+               "mutations" => [
+                 "foo"
+               ]
+             }
+           } = json_round_trip(%Mutations{mutations: ["foo"]})
   end
 
   test "cannot build FeatureSet with invalid features" do

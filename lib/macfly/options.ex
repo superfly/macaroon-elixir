@@ -15,10 +15,11 @@ defmodule Macfly.Options do
     Caveat.IfPresent,
     Caveat.ConfineGoogleHD,
     Caveat.ConfineGitHubOrg,
-    Caveat.NoAdminFeatures,
+    Caveat.IsMember,
     Caveat.FlyioUserID,
     Caveat.GitHubUserID,
-    Caveat.GoogleUserID
+    Caveat.GoogleUserID,
+    Caveat.Mutations
   ]
 
   @caveat_types for c <- @caveat_modules,
