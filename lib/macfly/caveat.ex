@@ -494,6 +494,33 @@ defmodule Macfly.Caveat.GoogleUserID do
   Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
+defmodule Macfly.Caveat.FlySrc do
+  alias __MODULE__
+
+  @enforce_keys [:organization, :app, :instance]
+  defstruct [:organization, :app, :instance]
+  @type t() :: %FlySrc{organization: String.t(), app: String.t(), instance: String.t()}
+
+  defimpl Macfly.Caveat do
+    def name(_), do: "FlySrc"
+    def type(_), do: 31
+
+    def body(%FlySrc{organization: org, app: app, instance: inst}) do
+      [org, app, inst]
+    end
+
+    def from_body(_, [org, app, inst], _)
+        when is_binary(org) and is_binary(app) and is_binary(inst) do
+      {:ok, %FlySrc{organization: org, app: app, instance: inst}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad FlySrc format"}
+  end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+end
+
 defmodule Macfly.Caveat.UnrecognizedCaveat do
   alias __MODULE__
 

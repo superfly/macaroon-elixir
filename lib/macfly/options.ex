@@ -19,7 +19,8 @@ defmodule Macfly.Options do
     Caveat.FlyioUserID,
     Caveat.GitHubUserID,
     Caveat.GoogleUserID,
-    Caveat.Mutations
+    Caveat.Mutations,
+    Caveat.FlySrc
   ]
 
   @caveat_types for c <- @caveat_modules,
