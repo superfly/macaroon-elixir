@@ -371,6 +371,30 @@ defmodule Macfly.Caveat.ConfineGitHubOrg do
   Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
 end
 
+defmodule Macfly.Caveat.MaxValidity do
+  alias __MODULE__
+
+  @enforce_keys [:seconds]
+  defstruct [:seconds]
+  @type t() :: %MaxValidity{seconds: integer()}
+
+  defimpl Macfly.Caveat do
+    def name(_), do: "MaxValidity"
+    def type(_), do: 21
+
+    def body(%MaxValidity{seconds: seconds}), do: seconds
+
+    def from_body(_, seconds, _) when is_integer(seconds) do
+      {:ok, %MaxValidity{seconds: seconds}}
+    end
+
+    def from_body(_, _, _), do: {:error, "bad MaxValidity format"}
+  end
+
+  require Macfly.Caveat.JSON
+  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+end
+
 defmodule Macfly.Caveat.IsMember do
   alias __MODULE__
 

@@ -15,6 +15,7 @@ defmodule Macfly.Options do
     Caveat.IfPresent,
     Caveat.ConfineGoogleHD,
     Caveat.ConfineGitHubOrg,
+    Caveat.MaxValidity,
     Caveat.IsMember,
     Caveat.FlyioUserID,
     Caveat.GitHubUserID,
