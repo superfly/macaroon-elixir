@@ -135,6 +135,10 @@ defmodule MacflyTest do
         "Mutations" ->
           assert %Macfly.Caveat.Mutations{mutations: ["foo"]} ==
                    hd(hd(macaroons).caveats)
+
+        "FlySrc" ->
+          assert %Macfly.Caveat.FlySrc{organization: "foo", app: "bar", instance: "baz"} ==
+                   hd(hd(macaroons).caveats)
       end
 
       assert header == Macfly.encode(macaroons)

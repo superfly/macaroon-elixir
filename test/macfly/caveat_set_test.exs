@@ -10,7 +10,8 @@ defmodule Macfly.CaveatSetTest do
         Macfly.Caveat.ConfineOrganization,
         Macfly.Caveat.BindToParentToken,
         Macfly.Caveat.ConfineGoogleHD,
-        Macfly.Caveat.ConfineGitHubOrg
+        Macfly.Caveat.ConfineGitHubOrg,
+        Macfly.Caveat.FlySrc
       ] do
     name = to_string(cav) |> String.split(".") |> List.last()
 
