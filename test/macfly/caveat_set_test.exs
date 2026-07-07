@@ -3,7 +3,7 @@ defmodule Macfly.CaveatSetTest do
 
   alias Macfly.CaveatSet
 
-  @vectors Jason.decode!(File.read!("test/vectors.json"))
+  @vectors JSON.decode!(File.read!("test/vectors.json"))
 
   for cav <- [
         Macfly.Caveat.ConfineUser,

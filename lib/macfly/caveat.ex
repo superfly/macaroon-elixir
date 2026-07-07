@@ -13,16 +13,16 @@ defprotocol Macfly.Caveat do
 end
 
 defmodule Macfly.Caveat.JSON do
-  defmacro defimpl_jason_encoder(module_name) do
+  defmacro defimpl_json_encoder(module_name) do
     quote do
-      defimpl Jason.Encoder, for: unquote(module_name) do
-        def encode(value, opts) do
-          Jason.Encode.map(
+      defimpl JSON.Encoder, for: unquote(module_name) do
+        def encode(value, encoder) do
+          JSON.Encoder.encode(
             %{
               type: Macfly.Caveat.name(value),
               body: Map.drop(value, [:__struct__])
             },
-            opts
+            encoder
           )
         end
       end
@@ -55,7 +55,7 @@ defmodule Macfly.Caveat.Organization do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ValidityWindow do
@@ -89,7 +89,7 @@ defmodule Macfly.Caveat.ValidityWindow do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.Mutations do
@@ -113,7 +113,7 @@ defmodule Macfly.Caveat.Mutations do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ConfineUser do
@@ -137,7 +137,7 @@ defmodule Macfly.Caveat.ConfineUser do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ConfineOrganization do
@@ -161,7 +161,7 @@ defmodule Macfly.Caveat.ConfineOrganization do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ThirdParty do
@@ -249,12 +249,12 @@ defmodule Macfly.Caveat.ThirdParty do
     def from_body(_, _, _), do: {:error, "bad ThirdParty format"}
   end
 
-  defimpl Jason.Encoder, for: __MODULE__ do
+  defimpl JSON.Encoder, for: __MODULE__ do
     def encode(
           %ThirdParty{location: location, verifier_key: verifier_key, ticket: ticket} = value,
-          opts
+          encoder
         ) do
-      Jason.Encode.map(
+      JSON.Encoder.encode(
         %{
           type: Macfly.Caveat.name(value),
           body: %{
@@ -263,7 +263,7 @@ defmodule Macfly.Caveat.ThirdParty do
             "Ticket" => ticket
           }
         },
-        opts
+        encoder
       )
     end
   end
@@ -292,7 +292,7 @@ defmodule Macfly.Caveat.BindToParentToken do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.IfPresent do
@@ -320,7 +320,7 @@ defmodule Macfly.Caveat.IfPresent do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ConfineGoogleHD do
@@ -344,7 +344,7 @@ defmodule Macfly.Caveat.ConfineGoogleHD do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.ConfineGitHubOrg do
@@ -368,7 +368,7 @@ defmodule Macfly.Caveat.ConfineGitHubOrg do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.MaxValidity do
@@ -392,7 +392,7 @@ defmodule Macfly.Caveat.MaxValidity do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.IsMember do
@@ -415,7 +415,7 @@ defmodule Macfly.Caveat.IsMember do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 # NoAdminFeatures was renamed to IsMember
@@ -439,7 +439,7 @@ defmodule Macfly.Caveat.NoAdminFeatures do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.FlyioUserID do
@@ -463,7 +463,7 @@ defmodule Macfly.Caveat.FlyioUserID do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.GitHubUserID do
@@ -487,7 +487,7 @@ defmodule Macfly.Caveat.GitHubUserID do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.GoogleUserID do
@@ -507,15 +507,14 @@ defmodule Macfly.Caveat.GoogleUserID do
     end
 
     def from_body(_, %Msgpax.Bin{data: bid}, _) when is_binary(bid) and byte_size(bid) <= 255 do
-      <<iid::size(byte_size(bid))-unit(8)>> = bid
-      {:ok, %GoogleUserID{id: iid}}
+      {:ok, %GoogleUserID{id: :binary.decode_unsigned(bid)}}
     end
 
     def from_body(_, body, _), do: {:error, "bad GoogleUserID format #{inspect(body)}"}
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.FlySrc do
@@ -542,7 +541,7 @@ defmodule Macfly.Caveat.FlySrc do
   end
 
   require Macfly.Caveat.JSON
-  Macfly.Caveat.JSON.defimpl_jason_encoder(__MODULE__)
+  Macfly.Caveat.JSON.defimpl_json_encoder(__MODULE__)
 end
 
 defmodule Macfly.Caveat.UnrecognizedCaveat do
@@ -562,14 +561,14 @@ defmodule Macfly.Caveat.UnrecognizedCaveat do
     end
   end
 
-  defimpl Jason.Encoder, for: __MODULE__ do
-    def encode(%UnrecognizedCaveat{} = value, opts) do
-      Jason.Encode.map(
+  defimpl JSON.Encoder, for: __MODULE__ do
+    def encode(%UnrecognizedCaveat{} = value, encoder) do
+      JSON.Encoder.encode(
         %{
           type: Macfly.Caveat.name(value),
           body: value.body
         },
-        opts
+        encoder
       )
     end
   end

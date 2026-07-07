@@ -8,11 +8,11 @@ defmodule Macfly.MixProject do
     [
       app: :macfly,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       consolidate_protocols: Mix.env() != :test,
-      elixirc_paths: if(Mix.env() == :test, do: [:lib, :test], else: [:lib]),
+      elixirc_paths: if(Mix.env() == :test, do: ["lib", "test"], else: ["lib"]),
       package: package(),
       docs: docs()
     ]
@@ -29,9 +29,8 @@ defmodule Macfly.MixProject do
   defp deps do
     [
       {:msgpax, "~> 2.3"},
-      {:httpoison, "~> 1.8"},
-      {:jason, "~> 1.4"},
-      {:elixir_uuid, "~> 1.2"},
+      {:req, "~> 0.5"},
+      {:jason, "~> 1.4", optional: true},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
   end
