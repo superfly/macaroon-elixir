@@ -25,7 +25,7 @@ defmodule Macfly.Crypto do
   def unseal(<<nonce::binary-size(@nonce_len), ct_tag::binary>>, <<key::binary-size(@key_len)>>)
       when byte_size(ct_tag) >= @tag_len do
     ct_len = byte_size(ct_tag) - @tag_len
-    <<ct::binary-size(ct_len), tag::binary>> = ct_tag
+    <<ct::binary-size(^ct_len), tag::binary>> = ct_tag
 
     with <<pt::binary>> <- :crypto.crypto_one_time_aead(@cipher, key, nonce, ct, <<>>, tag, false) do
       {:ok, pt}

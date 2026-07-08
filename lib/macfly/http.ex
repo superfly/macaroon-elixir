@@ -1,6 +1,8 @@
 defmodule Macfly.HTTP do
-  @callback get(url :: URI.t(), headers :: Keyword.t()) :: {atom(), any()}
-  @callback post(url :: URI.t(), body :: String.t(), headers :: Keyword.t()) :: {atom(), any()}
+  @type response() :: {:ok, Req.Response.t()} | {:error, Exception.t()}
+
+  @callback get(url :: URI.t(), headers :: Keyword.t()) :: response()
+  @callback post(url :: URI.t(), body :: String.t(), headers :: Keyword.t()) :: response()
 
   def get(url, headers), do: impl().get(url, headers)
   def post(url, body, headers), do: impl().post(url, body, headers)
@@ -9,8 +11,14 @@ end
 
 defmodule Macfly.HTTP.Client do
   @behaviour Macfly.HTTP
-  def get(url, headers), do: HTTPoison.get(to_string(url), headers)
-  def post(url, body, headers), do: HTTPoison.post(to_string(url), body, headers)
+
+  @req_options [decode_body: false, redirect: false]
+
+  def get(url, headers),
+    do: Req.get(to_string(url), Keyword.merge(@req_options, headers: headers))
+
+  def post(url, body, headers),
+    do: Req.post(to_string(url), Keyword.merge(@req_options, body: body, headers: headers))
 end
 
 defmodule Macfly.HTTP.Fake do
@@ -60,7 +68,7 @@ defmodule Macfly.HTTP.Fake do
       |> get_behaviors()
       |> do_behavior_poll(ticket, header)
     else
-      _ -> {:ok, %HTTPoison.Response{status_code: 401, body: ""}}
+      _ -> {:ok, %Req.Response{status: 401, body: ""}}
     end
   end
 
@@ -73,13 +81,13 @@ defmodule Macfly.HTTP.Fake do
         m
         |> to_string()
         |> then(&%{discharge: &1})
-        |> Jason.encode!()
-        |> then(&{:ok, %HTTPoison.Response{status_code: 200, body: &1}})
+        |> JSON.encode!()
+        |> then(&{:ok, %Req.Response{status: 200, body: &1}})
     end
   end
 
   def do_behavior_poll([first, :not_ready], _t, _h) when first in [:poll, :user_interactive] do
-    {:ok, %HTTPoison.Response{status_code: 202}}
+    {:ok, %Req.Response{status: 202}}
   end
 
   def do_behavior_poll([first, :require_auth | rest], t, h)
@@ -87,24 +95,24 @@ defmodule Macfly.HTTP.Fake do
     with "Bearer correct" <- Keyword.get(h, :Authorization) do
       do_behavior_poll([first | rest], t, h)
     else
-      _ -> {:ok, %HTTPoison.Response{status_code: 401, body: ""}}
+      _ -> {:ok, %Req.Response{status: 401, body: ""}}
     end
   end
 
   def do_behavior_poll([first, :error], _t, _h) when first in [:poll, :user_interactive] do
     %{error: "my error"}
-    |> Jason.encode!()
-    |> then(&{:ok, %HTTPoison.Response{status_code: 400, body: &1}})
+    |> JSON.encode!()
+    |> then(&{:ok, %Req.Response{status: 400, body: &1}})
   end
 
   def do_behavior_poll([first, :"500"], _t, _h) when first in [:poll, :user_interactive] do
-    {:ok, %HTTPoison.Response{status_code: 500, body: "internal server error"}}
+    {:ok, %Req.Response{status: 500, body: "internal server error"}}
   end
 
   def do_behavior_poll([first, :bogus], _t, _h) when first in [:poll, :user_interactive] do
     %{bogus: 123}
-    |> Jason.encode!()
-    |> then(&{:ok, %HTTPoison.Response{status_code: 200, body: &1}})
+    |> JSON.encode!()
+    |> then(&{:ok, %Req.Response{status: 200, body: &1}})
   end
 
   @init_uri %{scheme: "https", host: "location", path: "/.well-known/macfly/3p"}
@@ -113,7 +121,7 @@ defmodule Macfly.HTTP.Fake do
     with "application/json" <- Keyword.get(header, :"Content-Type"),
          authz when authz in [nil, "Bearer correct"] <- Keyword.get(header, :Authorization) do
       body
-      |> Jason.decode!()
+      |> JSON.decode!()
       |> case do
         %{"ticket" => <<t::binary>>} ->
           t
@@ -121,7 +129,7 @@ defmodule Macfly.HTTP.Fake do
           |> do_behavior_init(t, header)
       end
     else
-      _ -> {:ok, %HTTPoison.Response{status_code: 401, body: ""}}
+      _ -> {:ok, %Req.Response{status: 401, body: ""}}
     end
   end
 
@@ -134,44 +142,44 @@ defmodule Macfly.HTTP.Fake do
         m
         |> to_string()
         |> then(&%{discharge: &1})
-        |> Jason.encode!()
-        |> then(&{:ok, %HTTPoison.Response{status_code: 201, body: &1}})
+        |> JSON.encode!()
+        |> then(&{:ok, %Req.Response{status: 201, body: &1}})
     end
   end
 
   defp do_behavior_init([:poll | _], t, _h) do
     %{poll_url: "/poll/" <> t}
-    |> Jason.encode!()
-    |> then(&{:ok, %HTTPoison.Response{status_code: 201, body: &1}})
+    |> JSON.encode!()
+    |> then(&{:ok, %Req.Response{status: 201, body: &1}})
   end
 
   defp do_behavior_init([:user_interactive | _], t, _h) do
     %{user_interactive: %{poll_url: "/poll/" <> t, user_url: "/user"}}
-    |> Jason.encode!()
-    |> then(&{:ok, %HTTPoison.Response{status_code: 201, body: &1}})
+    |> JSON.encode!()
+    |> then(&{:ok, %Req.Response{status: 201, body: &1}})
   end
 
   defp do_behavior_init([:error], _t, _h) do
     %{error: "my error"}
-    |> Jason.encode!()
-    |> then(&{:ok, %HTTPoison.Response{status_code: 400, body: &1}})
+    |> JSON.encode!()
+    |> then(&{:ok, %Req.Response{status: 400, body: &1}})
   end
 
   defp do_behavior_init([:"500"], _t, _h) do
-    {:ok, %HTTPoison.Response{status_code: 500, body: "internal server error"}}
+    {:ok, %Req.Response{status: 500, body: "internal server error"}}
   end
 
   defp do_behavior_init([:bogus], _t, _h) do
     %{bogus: 123}
-    |> Jason.encode!()
-    |> then(&{:ok, %HTTPoison.Response{status_code: 201, body: &1}})
+    |> JSON.encode!()
+    |> then(&{:ok, %Req.Response{status: 201, body: &1}})
   end
 
   defp do_behavior_init([:require_auth | rest], t, header) do
     with "Bearer correct" <- Keyword.get(header, :Authorization) do
       do_behavior_init(rest, t, header)
     else
-      _ -> {:ok, %HTTPoison.Response{status_code: 401, body: ""}}
+      _ -> {:ok, %Req.Response{status: 401, body: ""}}
     end
   end
 end

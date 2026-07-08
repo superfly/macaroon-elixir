@@ -22,7 +22,37 @@ defmodule Macfly.Nonce do
   end
 
   def uuid(%Nonce{kid: kid, rnd: rnd}) do
-    kid_uuid = UUID.uuid5(@kid_namespace, kid)
-    UUID.uuid5(kid_uuid, rnd)
+    kid_uuid = uuid5(@kid_namespace, kid)
+    uuid5(kid_uuid, rnd)
+  end
+
+  defp uuid5(namespace, name) when is_binary(namespace) and is_binary(name) do
+    namespace
+    |> uuid_to_binary()
+    |> then(&:crypto.hash(:sha, &1 <> name))
+    |> binary_part(0, 16)
+    |> put_uuid5_bits()
+    |> format_uuid()
+  end
+
+  defp uuid_to_binary(uuid) do
+    uuid
+    |> String.replace("-", "")
+    |> Base.decode16!(case: :mixed)
+  end
+
+  defp put_uuid5_bits(<<a::binary-size(6), version, b, variant, c::binary-size(7)>>) do
+    version = version |> Bitwise.band(0x0F) |> Bitwise.bor(0x50)
+    variant = variant |> Bitwise.band(0x3F) |> Bitwise.bor(0x80)
+
+    <<a::binary, version, b, variant, c::binary>>
+  end
+
+  defp format_uuid(
+         <<a::binary-size(4), b::binary-size(2), c::binary-size(2), d::binary-size(2),
+           e::binary-size(6)>>
+       ) do
+    [a, b, c, d, e]
+    |> Enum.map_join("-", &Base.encode16(&1, case: :lower))
   end
 end

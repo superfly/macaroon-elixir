@@ -187,7 +187,7 @@ defmodule Macfly.CaveatTest do
          "location" => location,
          "with_tps" => header,
          "tp_key" => tp_key
-       }} = Jason.decode(data)
+       }} = JSON.decode(data)
 
       tp_key = Base.decode64!(tp_key)
 
@@ -233,9 +233,8 @@ defmodule Macfly.CaveatTest do
   end
 
   def json_round_trip(cav) do
-    with {:ok, encoded} <- Jason.encode(cav),
-         {:ok, decoded} <- Jason.decode(encoded) do
-      decoded
-    end
+    cav
+    |> JSON.encode!()
+    |> JSON.decode!()
   end
 end

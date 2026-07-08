@@ -21,7 +21,7 @@ defmodule Macfly.Discharge do
   @json_header ["Content-Type": "application/json"]
 
   @type error() ::
-          {:error, :failed, HTTPoison.Error.t()}
+          {:error, :failed, Exception.t()}
           | {:error, integer(),
              String.t()
              | {:bad_response, term()}
@@ -80,25 +80,28 @@ defmodule Macfly.Discharge do
     t
     |> Base.encode64()
     |> then(&%{ticket: &1})
-    |> Jason.encode!()
+    |> JSON.encode!()
     |> then(&HTTP.post(url, &1, h))
     |> handle_init_response(d)
 
     # Ticket isn't needed moving forward. Remove it so Discharges can be
     # serialized more compactly.
-    |> then(&%Discharge{&1 | ticket: nil})
+    |> then(fn %Discharge{} = discharge -> %Discharge{discharge | ticket: nil} end)
   end
 
-  defp handle_init_response({:error, e}, d),
+  defp handle_init_response({:error, e}, %Discharge{} = d),
     do: %Discharge{d | state: {:error, :failed, e}}
 
-  defp handle_init_response({:ok, %HTTPoison.MaybeRedirect{status_code: s, redirect_url: r}}, d)
-       when s in [307, 308] do
-    do_init(d, merge_url(d, r))
+  defp handle_init_response({:ok, %Req.Response{status: status} = response}, %Discharge{} = d)
+       when status in [307, 308] do
+    case Req.Response.get_header(response, "location") do
+      [redirect_url | _] -> do_init(d, merge_url(d, redirect_url))
+      _ -> %Discharge{d | state: {:error, status, {:bad_response, response.body}}}
+    end
   end
 
-  defp handle_init_response({:ok, %HTTPoison.Response{status_code: status, body: body}}, d) do
-    case Jason.decode(body) do
+  defp handle_init_response({:ok, %Req.Response{status: status, body: body}}, %Discharge{} = d) do
+    case JSON.decode(body) do
       {:ok, %{"discharge" => discharge}} ->
         %Discharge{d | state: {:success, discharge}}
 
@@ -120,13 +123,13 @@ defmodule Macfly.Discharge do
     end
   end
 
-  defp handle_poll_response({:ok, %HTTPoison.Response{status_code: 202}}, d), do: d
+  defp handle_poll_response({:ok, %Req.Response{status: 202}}, %Discharge{} = d), do: d
 
-  defp handle_poll_response({:error, e}, d),
+  defp handle_poll_response({:error, e}, %Discharge{} = d),
     do: %Discharge{d | state: {:error, :failed, e}}
 
-  defp handle_poll_response({:ok, %HTTPoison.Response{status_code: status, body: body}}, d) do
-    case Jason.decode(body) do
+  defp handle_poll_response({:ok, %Req.Response{status: status, body: body}}, %Discharge{} = d) do
+    case JSON.decode(body) do
       {:ok, %{"discharge" => discharge}} ->
         %Discharge{d | state: {:success, discharge}}
 
