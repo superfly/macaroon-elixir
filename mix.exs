@@ -2,7 +2,7 @@ defmodule Macfly.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/superfly/macaroon-elixir"
-  @version "0.2.20"
+  @version "0.2.21"
 
   def project do
     [
