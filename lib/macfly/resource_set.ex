@@ -79,6 +79,20 @@ defmodule Macfly.ResourceSet do
           end
         end
 
+        if Code.ensure_loaded?(Jason) do
+          defimpl Jason.Encoder, for: unquote(module_name) do
+            def encode(%unquote(module_name){unquote(resources_key) => resources} = value, opts) do
+              Jason.Encode.map(
+                %{
+                  type: Macfly.Caveat.name(value),
+                  body: %{unquote(resources_key) => resources}
+                },
+                opts
+              )
+            end
+          end
+        end
+
         @type t() :: %__MODULE__{
                 unquote(resources_key) => %{(String.t() | integer() | atom()) => Action.t()}
               }

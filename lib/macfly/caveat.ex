@@ -26,6 +26,20 @@ defmodule Macfly.Caveat.JSON do
           )
         end
       end
+
+      if Code.ensure_loaded?(Jason) do
+        defimpl Jason.Encoder, for: unquote(module_name) do
+          def encode(value, opts) do
+            Jason.Encode.map(
+              %{
+                type: Macfly.Caveat.name(value),
+                body: Map.drop(value, [:__struct__])
+              },
+              opts
+            )
+          end
+        end
+      end
     end
   end
 end
@@ -265,6 +279,27 @@ defmodule Macfly.Caveat.ThirdParty do
         },
         encoder
       )
+    end
+  end
+
+  if Code.ensure_loaded?(Jason) do
+    defimpl Jason.Encoder, for: __MODULE__ do
+      def encode(
+            %ThirdParty{location: location, verifier_key: verifier_key, ticket: ticket} = value,
+            opts
+          ) do
+        Jason.Encode.map(
+          %{
+            type: Macfly.Caveat.name(value),
+            body: %{
+              "Location" => location,
+              "VerifierKey" => verifier_key,
+              "Ticket" => ticket
+            }
+          },
+          opts
+        )
+      end
     end
   end
 end
@@ -570,6 +605,20 @@ defmodule Macfly.Caveat.UnrecognizedCaveat do
         },
         encoder
       )
+    end
+  end
+
+  if Code.ensure_loaded?(Jason) do
+    defimpl Jason.Encoder, for: __MODULE__ do
+      def encode(%UnrecognizedCaveat{} = value, opts) do
+        Jason.Encode.map(
+          %{
+            type: Macfly.Caveat.name(value),
+            body: value.body
+          },
+          opts
+        )
+      end
     end
   end
 end
