@@ -91,6 +91,16 @@ defmodule Macfly.Action do
     end
   end
 
+  if Code.ensure_loaded?(Jason) do
+    defimpl Jason.Encoder, for: Action do
+      def encode(%Action{} = action, opts) do
+        action
+        |> Macfly.Action.to_human()
+        |> Jason.Encode.string(opts)
+      end
+    end
+  end
+
   defimpl Msgpax.Packer, for: Action do
     def pack(%Action{} = action) do
       Macfly.Action.to_wire(action)

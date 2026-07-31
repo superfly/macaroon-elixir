@@ -233,8 +233,19 @@ defmodule Macfly.CaveatTest do
   end
 
   def json_round_trip(cav) do
-    cav
-    |> JSON.encode!()
-    |> JSON.decode!()
+    decoded =
+      cav
+      |> JSON.encode!()
+      |> JSON.decode!()
+
+    if Code.ensure_loaded?(Jason) do
+      # Jason.Encoder impls must stay in sync with the built-in JSON.Encoder impls
+      assert decoded ==
+               cav
+               |> Jason.encode!()
+               |> Jason.decode!()
+    end
+
+    decoded
   end
 end

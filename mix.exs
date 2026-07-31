@@ -2,7 +2,7 @@ defmodule Macfly.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/superfly/macaroon-elixir"
-  @version "0.2.21"
+  @version "0.2.22"
 
   def project do
     [
@@ -47,7 +47,7 @@ defmodule Macfly.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md"],
+      extras: ["README.md", "CHANGELOG.md"],
       source_ref: "v#{@version}",
       source_url: @source_url
     ]
